@@ -16,4 +16,4 @@ v1.2
 ----
 * Public release
 
-Original source code located at: [https://github.com/NO2CW/FM-DX-Webserver-analog-signal-meter](https://github.com/Highpoint2000/webserver-station-logos)
+Original source code located at: [https://github.com/Highpoint2000/webserver-station-logos](https://github.com/Highpoint2000/webserver-station-logos)
