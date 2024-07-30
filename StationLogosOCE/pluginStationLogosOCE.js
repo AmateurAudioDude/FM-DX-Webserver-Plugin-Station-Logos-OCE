@@ -1,16 +1,36 @@
 /*
-	Station Logos OCE + Station Info for no RDS by AAD v1.2
+	Station Logos OCE + Station Info for no RDS by AAD v1.2.2
 	https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 	https://github.com/Highpoint2000/webserver-station-logos
 */
 
-// Local station data
-const stationData = {
-    "87.800":	{ name: "Example FM",					loc: "Melbourne",		pwr: "1 kW [V] • 10 km"	},
-    "88.000":	{ name: "Example FM",					loc: "Melbourne",		pwr: "1 kW [V] • 10 km"	}
-};
+const includeLocalStationInfo = false; // Set to false to disable displaying localstationdata.json info
 
-const includeLocalStationInfo = false; // Set to false to disable displaying local station info
+// Declare stationData
+let stationData = {};
+
+if (includeLocalStationInfo) {
+    // Local station data file
+    const protocol = window.location.protocol; // http
+    const hostname = document.location.hostname; // example.com
+    const port = window.location.port; // 8080
+
+    let dataFilePath = `${protocol}//${hostname}`;
+    if (port) { dataFilePath += `:${port}`; }
+    dataFilePath += '/logos/json/localstationdata.json';
+
+    // Fetch localstationdata.json
+    fetch(dataFilePath).then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    }).then(data => {
+        stationData = data; // Update stationData with fetched data
+    }).catch(error => {
+        console.error('Error fetching station data:', error);
+    });
+}
 
 // CSS code
 var styleElement = document.createElement('style');
@@ -24,12 +44,43 @@ var cssCode = `
 	@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
 	@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
 	@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
-
 	.imageRotate {
 		-webkit-animation: spin 2s linear infinite;
 		-moz-animation: spin 2s linear infinite;
 		animation: spin 2s linear infinite;
 	}
+
+    @keyframes curtain-animation {
+        0% {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+        }
+        100% {
+            clip-path: polygon(50% 0, 50% 100%, 50% 100%, 50% 0);
+        }
+    }
+    .curtain {
+		-webkit-animation: curtain-animation 2s ease-in-out infinite alternate;
+		-moz-animation: curtain-animation 2s ease-in-out infinite alternate;
+        animation: curtain-animation 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .fade-animation {
+      animation: fadeInOut 4s ease-in-out infinite;
+    }
+
+    @keyframes fadeGrayscale {
+      0% { filter: grayscale(0%); }
+      50% { filter: grayscale(50%); }
+      100% { filter: grayscale(0%); }
+    }
+    .fade-grayscale {
+      animation: fadeGrayscale 4s ease-in-out infinite;
+    }
 
 	.logoFull { filter: brightness(100%) }
 	.logoDim { filter: brightness(50%) }
@@ -62,6 +113,8 @@ originalDiv.outerHTML = buttonDiv.outerHTML;
 
 document.getElementById('ps-container').style.padding = '12px';
 
+document.getElementById('station-logo').oncontextmenu = function(e) { e.preventDefault(); };
+
 // Mobile HTML
 document.getElementById('flags-container-phone').innerHTML = `
 	<div id="flags-container-phone" class="panel-33">
@@ -79,10 +132,13 @@ document.getElementById('flags-container-phone').innerHTML = `
                 <div style="display:inline-block">
                     <span style="margin-left: 20px;display: block;margin-top: 2px;" class="data-flag"></span>
                 </div>
-                <span class="pointer stereo-container" style="position: relative;">
-                    <span style="margin-left: 20px;" class="data-st">ST</span>
+                <span class="pointer stereo-container" style="position: relative; margin-left: 20px;" role="button" aria-label="Stereo / Mono toggle" tabindex="0">
+                    <div class="circle-container">
+                        <div class="circle data-st circle1"></div>
+                        <div class="circle data-st circle2"></div>
+                    </div>
                     <span class="overlay tooltip" data-tooltip="Stereo / Mono toggle. <br><strong>Click to toggle."></span>
-                </span>
+                </span>                                                               
                 <span style="margin-left: 15px;" class="data-ms">MS</span>
 		</h3>
 	</div>
@@ -100,6 +156,7 @@ let signalHold = 0; // seconds
 const signalDimThreshold = -98; // dBm
 let signalDimMax = 30; // seconds
 let signalDim = signalDimMax; // seconds
+const logoEffect = 'fade-animation'; // imageRotate, curtain, fade-animation, fade-grayscale
 
 // Check PI or local frequency
 $(document).ready(function() {
@@ -122,7 +179,7 @@ function CheckPIorFreq() {
 	const signalCalc = {'dbm': signalData, 'dbf': signalData - 120, 'dbuv': signalData - 108.75}[localStorage.getItem('signalUnit').toLowerCase()] || -30;
 	previousfreqData = freqData;
 	freqData = $('#data-frequency').text().trim();
-	const { name: customStationName, loc: customStationLoc, pwr: customStationPwr } = stationData[freqData] || {};
+	const { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist } = stationData[freqData] || {};
 	signalHold = (signalCalc >= signalHoldThreshold) ? signalHoldMax : signalHold - 1; // Cooldown before hiding local station info
 	signalHold = (signalHold <= 0) ? 0 : signalHold;
 	signalDim = (signalCalc >= signalDimThreshold) ? signalDimMax : signalDim - 1; // Cooldown before dimming logo
@@ -133,7 +190,7 @@ function CheckPIorFreq() {
 	if (signalDim) {
 		img.className = '';
 		if (logoRotate) {
-			img.classList.add('logoFull', 'imageRotate');
+			img.classList.add('logoFull', logoEffect);
 		} else {
 			img.classList.add('logoFull');
 		}
@@ -231,7 +288,7 @@ function updateStationLogo(piCode, psCode) {
 
 		// Rotating logo during PS loading
 		if (!found && !logoRotate && !logoPIPSVisible) { // logoPIPSVisible required for stations with dynamic PS
-			logoImage.attr('src', defaultImagePath).attr('alt', 'Empty logo').attr('class', 'imageRotate');
+			logoImage.attr('src', defaultImagePath).attr('alt', 'Empty logo').attr('class', logoEffect);
 			logoRotate = true;
 		}
     }
@@ -242,7 +299,7 @@ var rtInfo = document.getElementById('rt-container');
 var localInfo = document.getElementById('local-info-container');
 
 if (localStorage.getItem('signalUnit') === null) {
-	localStorage.setItem('signalUnit', 'dbm');
+	localStorage.setItem('signalUnit', 'dbf');
 }
 
 // Display local station logo JS code
@@ -318,10 +375,10 @@ function TXInfoField() {
 
 // Local station field
 function LocalStationInfoField() {
-	let { name: customStationName, loc: customStationLoc, pwr: customStationPwr } = stationData[freqData] || {};
+	let { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist } = stationData[freqData] || {};
 	localInfo = document.createElement('div');
 	localInfo.id = 'local-info-container';
-	localInfo.className = 'panel-33 hover-brighten tooltip';
+	localInfo.className = 'panel-33 hover-brighten tooltip-station-logos';
     localInfo.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
 	localInfo.innerHTML = `
 		<h2 style="margin-top: 0" class="mb-0 show-phone">
@@ -331,7 +388,7 @@ function LocalStationInfoField() {
 			<span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
 		</h4>
 		<span class="text-small">
-			<span>${customStationPwr || '&nbsp;'}</span>
+			<span>${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} ${customStationDist ? ' • ' + customStationDist + ' km' : '&nbsp;'}</span>
 		</span>
 	`;
 	var existingElements = document.querySelectorAll('#local-info-container');
@@ -342,4 +399,37 @@ function LocalStationInfoField() {
 	rtInfo.parentNode.insertBefore(localInfo, rtInfo.nextSibling);
 	localInfo.style.display = 'block';
 	documentLocal.style.display = 'none';
+    initStationLogosTooltips();
+}
+
+// Tooltip
+function initStationLogosTooltips() {
+    $('.tooltip-station-logos').hover(function(e){
+        var tooltipText = $(this).data('tooltip');
+        // Add a delay of 500 milliseconds before creating and appending the tooltip
+        $(this).data('timeout', setTimeout(() => {
+            var tooltip = $('<div class="tooltiptext"></div>').html(tooltipText);
+            $('body').append(tooltip);
+
+            var posX = e.pageX;
+            var posY = e.pageY;
+
+            var tooltipWidth = tooltip.outerWidth();
+            var tooltipHeight = tooltip.outerHeight();
+            posX -= tooltipWidth / 2;
+            posY -= tooltipHeight + 10;
+            tooltip.css({ top: posY, left: posX, opacity: .99 }); // Set opacity to 1
+        }, 500));
+    }, function() {
+        // Clear the timeout if the mouse leaves before the delay completes
+        clearTimeout($(this).data('timeout'));
+        $('.tooltiptext').remove();
+    }).mousemove(function(e){
+        var tooltipWidth = $('.tooltiptext').outerWidth();
+        var tooltipHeight = $('.tooltiptext').outerHeight();
+        var posX = e.pageX - tooltipWidth / 2;
+        var posY = e.pageY - tooltipHeight - 10;
+
+        $('.tooltiptext').css({ top: posY, left: posX });
+    });
 }
