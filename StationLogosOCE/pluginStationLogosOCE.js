@@ -1,10 +1,17 @@
 /*
-	Station Logos OCE + Station Info for no RDS by AAD v1.2.2
+	Station Logos OCE + Station Info for no RDS by AAD v1.2.3
 	https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 	https://github.com/Highpoint2000/webserver-station-logos
 */
 
+//////////////////////////////////////////////////
+
 const includeLocalStationInfo = false; // Set to false to disable displaying localstationdata.json info
+const logoEffect = 'fade-animation'; // imageRotate, curtain, fade-animation, fade-grayscale
+const signalDimThreshold = -99; // dBm
+const signalHoldThreshold = -98; // dBm
+
+//////////////////////////////////////////////////
 
 // Declare stationData
 let stationData = {};
@@ -150,13 +157,10 @@ var logoLocal;
 var freqData;
 let logoRotate = false;
 let logoPIPSVisible = false;
-const signalHoldThreshold = -96; // dBm
 let signalHoldMax = 10; // seconds
 let signalHold = 0; // seconds
-const signalDimThreshold = -98; // dBm
 let signalDimMax = 30; // seconds
 let signalDim = signalDimMax; // seconds
-const logoEffect = 'fade-animation'; // imageRotate, curtain, fade-animation, fade-grayscale
 
 // Check PI or local frequency
 $(document).ready(function() {
@@ -381,8 +385,8 @@ function LocalStationInfoField() {
 	localInfo.className = 'panel-33 hover-brighten tooltip-station-logos';
     localInfo.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
 	localInfo.innerHTML = `
-		<h2 style="margin-top: 0" class="mb-0 show-phone">
-			<span style="font-size: 20px">${customStationName}</span>
+		<h2 style="margin-top: 0" class="mb-0 show-phone" >
+			<span id="data-station-name" style="font-size: 20px">${customStationName}</span>
 		</h2>
 		<h4 class="m-0">
 			<span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
@@ -419,6 +423,11 @@ function initStationLogosTooltips() {
             posX -= tooltipWidth / 2;
             posY -= tooltipHeight + 10;
             tooltip.css({ top: posY, left: posX, opacity: .99 }); // Set opacity to 1
+            // For touchscreen devices
+            if ((/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent)) && ('ontouchstart' in window || navigator.maxTouchPoints)) {
+                setTimeout(() => { $('.tooltiptext').remove(); }, 10000);
+                document.addEventListener('touchstart', function() { setTimeout(() => { $('.tooltiptext').remove(); }, 500); });
+            }
         }, 500));
     }, function() {
         // Clear the timeout if the mouse leaves before the delay completes
