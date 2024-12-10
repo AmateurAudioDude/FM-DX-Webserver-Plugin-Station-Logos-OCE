@@ -12,9 +12,9 @@
 const includeLocalStationInfo = false; // Set to false to disable displaying localstationdata.json info
 const logoEffect = 'fade-animation'; // imageRotate, curtain, fade-animation, fade-grayscale
 const prioritiseSvg = false; // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
-const decemberSantaHatLogo = true;
 const signalDimThreshold = -103; // dBm
 const signalHoldThreshold = -101; // dBm
+const decemberSantaHatLogo = true;
 
 //////////////////////////////////////////////////
 
