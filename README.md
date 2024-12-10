@@ -8,9 +8,11 @@ This plugin displays station logos for stations with and without RDS data, targe
 * Restart FM-DX-Webserver if required
 * Login to Adminstrator Panel and enable plugin
 
-## Options
-
-`includeLocalStationInfo`: Set to true to enable logos for stations without [RDS](https://en.wikipedia.org/wiki/Radio_Data_System). Files are to be stored in FM-DX Webserver `/web/logos/local` folder.
+> [!NOTE]
+> ### Options
+>
+> - `includeLocalStationInfo`: Set to true to enable logos for stations without [RDS](https://en.wikipedia.org/wiki/Radio_Data_System). Files are to be stored in FM-DX Webserver `/web/logos/local` folder.   
+> - `prioritiseSvg`: Set to true to display 'svg' file if both 'svg' and 'png' files exist for tuned station.   
 
 ## For stations without RDS data
 * Entries can be added in `localstationdata.json` (stored in `/web/logos/json`). Once edited, confirm each line except the last ends with a comma.
@@ -18,6 +20,12 @@ This plugin displays station logos for stations with and without RDS data, targe
 * Images can be named with an underscore, followed by station frequency (stored in `/web/logos/local`). Example: `_87.600.png`
 
 * To change logo animation for tentatively loaded PS RDS, Open `pluginStationLogosOCE.js`, find and edit the line containing `const logoEffect`.
+
+v1.2.4
+------
+* Container is slightly resized if Peakmeter plugin is found
+* Added option to prioritise 'svg' over 'png' images
+* Added "Santa hat" default logo shown during December
 
 v1.2.3
 ------
