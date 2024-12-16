@@ -349,7 +349,6 @@ function updateStationLogo(piCode, psCode) {
     }
 }
 
-
 var documentLocal = document.querySelector('div.flex-container.flex-phone.flex-phone-column div.panel-33.hover-brighten.tooltip');
 var rtInfo = document.getElementById('rt-container');
 var localInfo = document.getElementById('local-info-container');
