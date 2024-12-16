@@ -1,5 +1,5 @@
 /*
-	Station Logos OCE + Station Info for no RDS by AAD v1.2.4
+	Station Logos OCE + Station Info for no RDS by AAD v1.2.5
 	https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
 	https://github.com/Highpoint2000/webserver-station-logos
@@ -9,11 +9,12 @@
 
 //////////////////////////////////////////////////
 
-const includeLocalStationInfo = false; // Set to false to disable displaying localstationdata.json info
-const prioritiseSvg = false; // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
-const logoEffect = 'fade-animation'; // imageRotate, curtain, fade-animation, fade-grayscale
-const signalDimThreshold = -103; // dBm
-const signalHoldThreshold = -101; // dBm
+const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
+const prioritiseSvg = false;                // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
+const enableCaseInsensitivePs = true;       // Ignores filename case for RDS PS
+const logoEffect = 'fade-animation';        // imageRotate, curtain, fade-animation, fade-grayscale
+const signalDimThreshold = -103;            // dBm
+const signalHoldThreshold = -101;           // dBm
 const decemberSantaHatLogo = true;
 
 //////////////////////////////////////////////////
@@ -264,31 +265,38 @@ function CheckPIorFreq() {
 
 // Display PI+PS logo JS code
 function updateStationLogo(piCode, psCode) {
-	if (window.matchMedia("(orientation: portrait)").matches) { mobileRefreshNew = 'p'; } else { mobileRefreshNew = 'l'; }
+    if (window.matchMedia("(orientation: portrait)").matches) {
+        mobileRefreshNew = 'p';
+    } else {
+        mobileRefreshNew = 'l';
+    }
+
     if (piCode !== window.piCode || psCode !== window.psCode || mobileRefresh !== mobileRefreshNew) {
         window.piCode = piCode;
         window.psCode = psCode;
-		if (window.matchMedia("(orientation: portrait)").matches) { mobileRefresh = 'p'; } else { mobileRefresh = 'l'; }
 
-        const paths = [
-            `${localpath}${piCode}`,
-            `${localpath}${piCode}_${psCode}`
-        ];
-
-        let supportedExtensions;
-        if (!prioritiseSvg) {
-            supportedExtensions = ['png', 'svg'];
+        if (window.matchMedia("(orientation: portrait)").matches) {
+            mobileRefresh = 'p';
         } else {
-            supportedExtensions = ['svg', 'png'];
+            mobileRefresh = 'l';
         }
+
+        function generateCaseVariations(str) {
+            return [str, str.toLowerCase(), str.toUpperCase(), str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()];
+        }
+
+        const paths = enableCaseInsensitivePs ?
+            generateCaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`) :
+            [`${localpath}${piCode}_${psCode}`];
+
+        paths.unshift(`${localpath}${piCode}`);
+
+        let supportedExtensions = prioritiseSvg ? ['svg', 'png'] : ['png', 'svg'];
         let found = false;
 
         // Function to check each path for logo image
         function checkNextPath(index) {
             if (found || index >= paths.length) {
-                if (!found) {
-                    // Rotating logo is buggy here with high latency connections so therefore must be executed below
-                }
                 return;
             }
 
@@ -297,9 +305,7 @@ function updateStationLogo(piCode, psCode) {
             // Function to check each extension for logo image
             function checkNextExtension(extensionIndex) {
                 if (found || extensionIndex >= supportedExtensions.length) {
-                    if (!found) {
-                        checkNextPath(index + 1);
-                    }
+                    checkNextPath(index + 1);
                     return;
                 }
 
@@ -307,7 +313,11 @@ function updateStationLogo(piCode, psCode) {
                     url: `${path}.${supportedExtensions[extensionIndex]}`,
                     method: 'HEAD',
                     success: function () {
-                        logoImage.attr('src', `${path}.${supportedExtensions[extensionIndex]}`).attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`).css('display', 'block').css('image-rendering', 'auto').attr('class', '');
+                        logoImage.attr('src', `${path}.${supportedExtensions[extensionIndex]}`)
+                            .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
+                            .css('display', 'block')
+                            .css('image-rendering', 'auto')
+                            .attr('class', '');
                         logoPIPSVisible = true;
                         found = true;
                         logoRotate = false;
@@ -323,19 +333,22 @@ function updateStationLogo(piCode, psCode) {
 
         checkNextPath(0); // Start checking paths
 
-		// Replace local station field if it exists with TX info field
-		if (logoLocal) {
-			logoLocal = false;
-			TXInfoField();
-		}
+        // Replace local station field if it exists with TX info field
+        if (logoLocal) {
+            logoLocal = false;
+            TXInfoField();
+        }
 
-		// Rotating logo during PS loading
-		if (!found && !logoRotate && !logoPIPSVisible) { // logoPIPSVisible required for stations with dynamic PS
-			logoImage.attr('src', defaultImagePath).attr('alt', 'Empty logo').attr('class', logoEffect);
-			logoRotate = true;
-		}
+        // Rotating logo during PS loading
+        if (!found && !logoRotate && !logoPIPSVisible) {
+            logoImage.attr('src', defaultImagePath)
+                .attr('alt', 'Empty logo')
+                .attr('class', logoEffect);
+            logoRotate = true;
+        }
     }
 }
+
 
 var documentLocal = document.querySelector('div.flex-container.flex-phone.flex-phone-column div.panel-33.hover-brighten.tooltip');
 var rtInfo = document.getElementById('rt-container');
@@ -362,12 +375,7 @@ function updateLocalStationInfo() {
             `${localpath}local/_${freqData}`
         ];
 
-        let supportedExtensions;
-        if (!prioritiseSvg) {
-            supportedExtensions = ['png', 'svg'];
-        } else {
-            supportedExtensions = ['svg', 'png'];
-        }
+        let supportedExtensions = prioritiseSvg ? ['svg', 'png'] : ['png', 'svg'];
         let foundLocal = false;
 
         // Function to check each path for logo image
