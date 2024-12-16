@@ -7,17 +7,18 @@
 
 (() => {
 
-//////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
+const includeLocalStationInfo = false;      // Set to false to disable displaying localstationdata.json info
 const prioritiseSvg = false;                // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
 const enableCaseInsensitivePs = true;       // Ignores filename case for RDS PS
+const psCaseInsensitiveLevel = 1;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
 const logoEffect = 'fade-animation';        // imageRotate, curtain, fade-animation, fade-grayscale
 const signalDimThreshold = -103;            // dBm
 const signalHoldThreshold = -101;           // dBm
 const decemberSantaHatLogo = true;
 
-//////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Declare stationData
 let stationData = {};
@@ -281,15 +282,151 @@ function updateStationLogo(piCode, psCode) {
             mobileRefresh = 'l';
         }
 
-        function generateCaseVariations(str) {
-            return [str, str.toLowerCase(), str.toUpperCase(), str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()];
+        /*
+            Case-insensitive code
+        */
+
+        function toTitleCase(str) {
+            return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('_');
         }
 
-        const paths = enableCaseInsensitivePs ?
-            generateCaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`) :
-            [`${localpath}${piCode}_${psCode}`];
+        function generateLevel1CaseVariations(str) {
+            // Level 1: Basic variations (Original, lowercase, uppercase, first letter uppercase, title case)
+            return [
+                str,
+                toTitleCase(str),
+                str.toLowerCase(),
+                str.toUpperCase(),
+                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()  // First letter uppercase
+            ];
+        }
+
+        function generateLevel2CaseVariations(str) {
+            // Level 2: Random case variation, alternating case, reversed case
+            const randomCaseVariation = str.split('').map(char => 
+                Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()
+            ).join('');
+
+            return [
+                str,
+                toTitleCase(str),
+                str.toLowerCase(),
+                str.toUpperCase(),
+                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(),
+                randomCaseVariation  // Random case variation
+            ];
+        }
+
+        function generateLevel3CaseVariations(str) {
+            // Level 3: Random uppercase/lowercase for each character
+            const randomCaseVariation = str.split('').map(char => 
+                Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()
+            ).join('');
+
+            const alternatingCase = str.split('').map((char, index) => 
+                index % 2 === 0 ? char.toUpperCase() : char.toLowerCase()
+            ).join('');
+
+            const reversedCase = str.split('').map(char => 
+                char === char.toUpperCase() ? char.toLowerCase() : char.toUpperCase()
+            ).join('');
+
+            const allUpperCase = str.toUpperCase();
+
+            const allLowerCase = str.toLowerCase();
+
+            const capitalizedFirstLetter = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+            return [
+                str,
+                toTitleCase(str),
+                allLowerCase,
+                allUpperCase,
+                capitalizedFirstLetter, // First letter uppercase
+                randomCaseVariation, // Random case variation
+                alternatingCase, // Alternating case (AbCdEf...)
+                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(),  // First letter uppercase
+                reversedCase // Opposite of each character
+            ];
+        }
+
+        function generateLevel4CaseVariations(str) {
+            // Level 4: level 1 + 2 + 3
+            const level1 = generateLevel1CaseVariations(str);
+            const level2 = generateLevel2CaseVariations(str);
+            const level3 = generateLevel3CaseVariations(str);
+
+            return [
+                ...level1,
+                ...level2,
+                ...level3
+            ];
+        }
+
+        function generateLevel5CaseVariations(str) {
+            // Level 5: All possible combinations of upper/lowercase for each character
+            function generateAllCaseCombinations(str) {
+                const results = [];
+                const numCombinations = 1 << str.length; // 2^length of the string
+
+                for (let i = 0; i < numCombinations; i++) {
+                    let combination = '';
+                    for (let j = 0; j < str.length; j++) {
+                        combination += (i & (1 << j)) ? str.charAt(j).toUpperCase() : str.charAt(j).toLowerCase();
+                    }
+                    results.push(combination);
+                }
+
+                return results;
+            }
+
+            const allCombinations = generateAllCaseCombinations(str);
+
+            return [
+                str,
+                toTitleCase(str),
+                str.toUpperCase(),
+                str.toLowerCase(),
+                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(), // First letter uppercase
+                ...allCombinations // All possible case combinations
+            ];
+        }
+
+        let paths;
+
+        if (enableCaseInsensitivePs) {
+            switch (psCaseInsensitiveLevel) {
+                case 0:
+                    paths = [`${localpath}${piCode}_${psCode}`];
+                    break;
+                case 1:
+                    paths = generateLevel1CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
+                    break;
+                case 2:
+                    paths = generateLevel2CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
+                    break;
+                case 3:
+                    paths = generateLevel3CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
+                    break;
+                case 4:
+                    paths = generateLevel4CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
+                    break;
+                case 5:
+                    paths = generateLevel5CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
+                    break;
+                default:
+                    paths = [`${localpath}${piCode}_${psCode}`];
+                    break;
+            }
+        } else {
+            paths = [`${localpath}${piCode}_${psCode}`];
+        }
 
         paths.unshift(`${localpath}${piCode}`);
+
+        /*
+            End of case-insensitive code
+        */
 
         let supportedExtensions = prioritiseSvg ? ['svg', 'png'] : ['png', 'svg'];
         let found = false;
