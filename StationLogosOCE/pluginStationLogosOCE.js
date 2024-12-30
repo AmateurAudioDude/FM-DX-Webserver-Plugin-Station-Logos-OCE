@@ -1,5 +1,5 @@
 /*
-	Station Logos OCE + Station Info for no RDS by AAD v1.2.5
+	Station Logos OCE + Station Info for no RDS by AAD v1.2.6
 	https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
 	https://github.com/Highpoint2000/webserver-station-logos
@@ -568,20 +568,21 @@ function TXInfoField() {
 // Local station field
 function LocalStationInfoField() {
 	let { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist } = stationData[freqData] || {};
+    let imperialUnits = localStorage.getItem("imperialUnits");
 	localInfo = document.createElement('div');
 	localInfo.id = 'local-info-container';
 	localInfo.className = 'panel-33 hover-brighten tooltip-station-logos';
     localInfo.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
 	localInfo.innerHTML = `
-		<h2 style="margin-top: 0" class="mb-0 show-phone" >
-			<span id="data-station-name" style="font-size: 20px">${customStationName}</span>
-		</h2>
-		<h4 class="m-0">
-			<span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
-		</h4>
-		<span class="text-small">
-			<span>${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} ${customStationDist ? ' • ' + customStationDist + ' km' : '&nbsp;'}</span>
-		</span>
+        <h2 style="margin-top: 0" class="mb-0 show-phone" >
+            <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
+        </h2>
+        <h4 class="m-0">
+            <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
+        </h4>
+        <span class="text-small">
+            <span>${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} ${customStationDist ? ' • ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : '&nbsp;'}</span>
+        </span>
 	`;
 	var existingElements = document.querySelectorAll('#local-info-container');
 	existingElements.forEach(function(element) {
