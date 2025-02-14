@@ -1,5 +1,5 @@
 /*
-	Station Logos OCE + Station Info for no RDS by AAD v1.2.6
+	Station Logos OCE + Station Info for no RDS by AAD v1.2.7
 	https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
 	https://github.com/Highpoint2000/webserver-station-logos
@@ -9,7 +9,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const includeLocalStationInfo = false;      // Set to false to disable displaying localstationdata.json info
+const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
 const prioritiseSvg = false;                // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
 const enableCaseInsensitivePs = true;       // Ignores filename case for RDS PS
 const psCaseInsensitiveLevel = 1;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
@@ -47,8 +47,8 @@ if (includeLocalStationInfo) {
 }
 
 // CSS code
-var styleElement = document.createElement('style');
-var cssCode = `
+let styleElement = document.createElement('style');
+let cssCode = `
 	@keyframes fadeIn {
 		0% { opacity: 0; }
 		75% { opacity: 0; }
@@ -102,7 +102,7 @@ var cssCode = `
 styleElement.appendChild(document.createTextNode(cssCode));
 document.head.appendChild(styleElement);
 
-var defaultImagePath;
+let defaultImagePath;
 
 const currentDate = new Date();
 
@@ -112,22 +112,22 @@ if (currentDate.getMonth() === 11 && decemberSantaHatLogo) {
     defaultImagePath = 'data:image/png;base64,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';
 }
 
-
 // Desktop HTML
-var showPeakmeter = localStorage.getItem("showPeakmeter");
+let showPeakmeter = localStorage.getItem("showPeakmeter");
+let LogoContainerHtml;
 
 document.addEventListener('DOMContentLoaded', function () {
     let isPeakmeterFound = document.getElementById('peak-meter-container');
 
     if (showPeakmeter === 'true' || (isPeakmeterFound && !showPeakmeter)) {
-    var LogoContainerHtml = '<div style="width: 2.95%; min-width: 2.95%"></div> <!-- Spacer -->' +
+        LogoContainerHtml = '<div style="width: 2.95%; min-width: 2.95%"></div> <!-- Spacer -->' +
         '<div class="panel-25 m-0 hide-phone" style="width: 64%; max-width: 64%; min-width: 160px">' +
         '    <div id="logo-container" style="width: auto; height: 72px; display: flex; justify-content: center; align-items: center; margin: auto">' +
         '        <img id="station-logo" src="' + defaultImagePath + '" alt="Default logo" style="width: auto; max-width: 160px; padding: 0px 2px; margin: 0 8px; max-height: 100%; margin-top: 18px; border-radius: 4px; display: block; image-rendering: auto">' +
         '    </div>' +
         '</div>';
     } else { // if (showPeakmeter === 'false' || showPeakmeter === null) {
-    var LogoContainerHtml = '<div style="width: 5%; min-width: 2.5%"></div> <!-- Spacer -->' +
+        LogoContainerHtml = '<div style="width: 5%; min-width: 2.5%"></div> <!-- Spacer -->' +
         '<div class="panel-25 m-0 hide-phone" style="width: 48%; max-width: 48%; min-width: 160px">' +
         '    <div id="logo-container" style="width: auto; height: 72px; display: flex; justify-content: center; align-items: center; margin: auto">' +
         '        <img id="station-logo" src="' + defaultImagePath + '" alt="Default logo" style="width: auto; max-width: 140px; padding: 0px 2px; margin: 0 8px; max-height: 100%; margin-top: 18px; border-radius: 4px; display: block; image-rendering: auto">' +
@@ -139,13 +139,13 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById("ps-container").insertAdjacentHTML('afterend', LogoContainerHtml);
 
     // The new HTML for the div element with the Play / Stop button
-    var buttonHTML = '<div class="panel-10 no-bg h-100 m-0 m-right-20 hide-phone" style="width: 88px; margin-right: 20px !important;">' +
+    let buttonHTML = '<div class="panel-10 no-bg h-100 m-0 m-right-20 hide-phone" style="width: 88px; margin-right: 20px !important;">' +
                          '<button class="playbutton" aria-label="Play / Stop Button"><i class="fa-solid fa-play fa-lg"></i></button>' +
                       '</div>';
     // Select the original div element
-    var originalDiv = document.querySelector('.panel-10');
+    let originalDiv = document.querySelector('.panel-10');
     // Create a new div element
-    var buttonDiv = document.createElement('div');
+    let buttonDiv = document.createElement('div');
     buttonDiv.innerHTML = buttonHTML;
     // Replace the original div element with the new HTML
     originalDiv.outerHTML = buttonDiv.outerHTML;
@@ -185,22 +185,91 @@ document.getElementById('flags-container-phone').innerHTML = `
 `;
 
 const localpath = '/logos/'; // Path to local logo images
-var logoImage;
-var logoLocal;
-var freqData;
+let logoImage;
+let logoLocal;
+let freqData;
+let intervalDividerPrimary = 5;
+let intervalDividerSecondary = 1.25;
+let firstLocalstationRun = false;
+let firstLocalstationRunCounter = 0;
+let firstLocalstationRunCounterMax = 10;
 let logoRotate = false;
 let logoPIPSVisible = false;
-let signalHoldMax = 10; // seconds
+let signalHoldMax = 10 * ((intervalDividerPrimary / intervalDividerSecondary) / 1.6666); // seconds
 let signalHold = 0; // seconds
-let signalDimMax = 30; // seconds
+let signalDimMax = 30 * ((intervalDividerPrimary / intervalDividerSecondary) / 1.6666); // seconds
 let signalDim = signalDimMax; // seconds
+let localStationDelayCounterMax = 8;
+let localStationDelayCounter = localStationDelayCounterMax;
+let setIntervalMain;
+let setTimeoutMain;
+let freq = 0;
+let dataFreq = 0;
+let debug = false;
 
 // Check PI or local frequency
-$(document).ready(function() {
-	setInterval(CheckPIorFreq, 1000);
+document.addEventListener("DOMContentLoaded", function() {
+    $(document).ready(function() {
+        setIntervalMain = setInterval(CheckPIorFreq, 1000 / intervalDividerPrimary);
+        setTimeoutMain = setTimeout(() => {
+            clearInterval(setIntervalMain);
+            setIntervalMain = setInterval(CheckPIorFreq, 1000 / intervalDividerSecondary);
+        }, 10000);
+
+        // Initialise MutationObserver for #data-frequency
+        const targetNode = document.getElementById('data-frequency');
+        const config = { childList: true, subtree: true };
+
+        // MutationObserver callback
+        const observerCallback = (mutationsList) => {
+            let dataFreq;
+
+            for (let mutation of mutationsList) {
+                if (mutation.type === 'childList' || mutation.type === 'subtree') {
+                    if (data.freq || targetNode.textContent) {
+                        dataFreq = Number(data.freq) || Number(targetNode.textContent);
+                        if (freq !== 0 && freq !== dataFreq) {
+                            freq = dataFreq;
+                            if (debug) console.log('Frequency changed:', freq);
+
+                            if (typeof setIntervalMain !== 'undefined') clearInterval(setIntervalMain);
+
+                            setIntervalMain = setInterval(CheckPIorFreq, 1000 / intervalDividerPrimary);
+
+                            if (typeof setTimeoutMain !== 'undefined') clearTimeout(setTimeoutMain);
+
+                            setTimeoutMain = setTimeout(() => {
+                                clearInterval(setIntervalMain);
+                                setIntervalMain = setInterval(CheckPIorFreq, 1000 / intervalDividerSecondary);
+                            }, 10000);
+
+                            CheckPIorFreq();
+
+                            return;
+                        }
+                        freq = dataFreq;
+                    }
+                }
+            }
+        };
+
+        // Create observer
+        const observer = new MutationObserver(observerCallback);
+        observer.observe(targetNode, config);
+
+    });
 });
 
 function CheckPIorFreq() {
+    if (debug) console.log('freq', (data.freq || document.getElementById("data-frequency").textContent), ' localStationDelayCounter:', localStationDelayCounter, ' signalHold:', signalHold, ' firstLocalstationRun:', firstLocalstationRun, '   ', CheckPIorFreq);
+
+    if (!firstLocalstationRun) {
+        firstLocalstationRunCounter++;
+        if (firstLocalstationRunCounter >= firstLocalstationRunCounterMax) {
+            firstLocalstationRun = true;
+        }
+    }
+
 	// Check if mobile device code executed within function to catch any change in screen orientation
 	if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) {
 		logoImage = $('#station-logo-phone');
@@ -217,13 +286,13 @@ function CheckPIorFreq() {
 	previousfreqData = freqData;
 	freqData = $('#data-frequency').text().trim();
 	const { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist } = stationData[freqData] || {};
-	signalHold = (signalCalc >= signalHoldThreshold) ? signalHoldMax : signalHold - 1; // Cooldown before hiding local station info
+	signalHold = (signalCalc >= signalHoldThreshold) ? parseInt(signalHoldMax) : signalHold - 1; // Cooldown before hiding local station info
 	signalHold = (signalHold <= 0) ? 0 : signalHold;
 	signalDim = (signalCalc >= signalDimThreshold) ? signalDimMax : signalDim - 1; // Cooldown before dimming logo
 	signalDim = (signalDim <= 0) ? 0 : signalDim;
 
 	// Dim logo on low signal
-	var img = document.getElementById(imgLogoImage);
+	let img = document.getElementById(imgLogoImage);
 	if (signalDim) {
 		img.className = '';
 		if (logoRotate) {
@@ -250,7 +319,11 @@ function CheckPIorFreq() {
 			updateStationLogo(piCode, psCode);
 		} else if (includeLocalStationInfo && customStationName && signalHold) { // Local station info if signal is greater than signalHoldThreshold in dBm value
 			if (freqData !== previousfreqData) { logoLocal = false; }
-			updateLocalStationInfo();
+			if (signalCalc >= signalHoldThreshold) {
+                updateLocalStationInfo();
+            } else {
+                localStationDelayCounter = 0;
+            }
 			logoPIPSVisible = false;
 		} else { // Default logo
 			logoImage.attr('src', defaultImagePath).attr('alt', 'Default logo');
@@ -259,6 +332,7 @@ function CheckPIorFreq() {
 			window.psCode = '';
 			logoLocal = false; // Needed for local station signal threshold
 			logoPIPSVisible = false;
+            if (firstLocalstationRun) localStationDelayCounter = 0;
 			TXInfoField();
 		}
 	}
@@ -486,9 +560,9 @@ function updateStationLogo(piCode, psCode) {
     }
 }
 
-var documentLocal = document.querySelector('div.flex-container.flex-phone.flex-phone-column div.panel-33.hover-brighten.tooltip');
-var rtInfo = document.getElementById('rt-container');
-var localInfo = document.getElementById('local-info-container');
+let documentLocal = document.querySelector('div.flex-container.flex-phone.flex-phone-column div.panel-33.hover-brighten.tooltip');
+let rtInfo = document.getElementById('rt-container');
+let localInfo = document.getElementById('local-info-container');
 
 if (localStorage.getItem('signalUnit') === null) {
 	localStorage.setItem('signalUnit', 'dbf');
@@ -496,6 +570,10 @@ if (localStorage.getItem('signalUnit') === null) {
 
 // Display local station logo JS code
 function updateLocalStationInfo() {
+    firstLocalstationRun = true;
+    localStationDelayCounter++;
+    if (localStationDelayCounter <= localStationDelayCounterMax) return;
+    localStationDelayCounter = 0;
 	if (window.matchMedia("(orientation: portrait)").matches) { mobileRefreshNew = 'p'; } else { mobileRefreshNew = 'l'; }
     if (!logoLocal || mobileRefresh !== mobileRefreshNew) {
 		logoLocal = true;
@@ -558,7 +636,7 @@ function updateLocalStationInfo() {
 // TX Info field
 function TXInfoField() {
 	documentLocal.style.display = 'block';
-	var existingElements = document.querySelectorAll('#local-info-container');
+	let existingElements = document.querySelectorAll('#local-info-container');
 	existingElements.forEach(function(element) {
 		element.parentNode.removeChild(localInfo);
 		element.remove();
@@ -581,10 +659,10 @@ function LocalStationInfoField() {
             <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
         </h4>
         <span class="text-small">
-            <span>${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} ${customStationDist ? ' • ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : '&nbsp;'}</span>
+            <span>${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} ${customStationDist && !isNaN(customStationDist) ? ' • ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' • ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')}</span>
         </span>
 	`;
-	var existingElements = document.querySelectorAll('#local-info-container');
+	let existingElements = document.querySelectorAll('#local-info-container');
 	existingElements.forEach(function(element) {
 		element.style.display = 'none';
 		element.remove();
@@ -598,17 +676,17 @@ function LocalStationInfoField() {
 // Tooltip
 function initStationLogosTooltips() {
     $('.tooltip-station-logos').hover(function(e){
-        var tooltipText = $(this).data('tooltip');
+        let tooltipText = $(this).data('tooltip');
         // Add a delay of 500 milliseconds before creating and appending the tooltip
         $(this).data('timeout', setTimeout(() => {
-            var tooltip = $('<div class="tooltiptext"></div>').html(tooltipText);
+            let tooltip = $('<div class="tooltiptext"></div>').html(tooltipText);
             $('body').append(tooltip);
 
-            var posX = e.pageX;
-            var posY = e.pageY;
+            let posX = e.pageX;
+            let posY = e.pageY;
 
-            var tooltipWidth = tooltip.outerWidth();
-            var tooltipHeight = tooltip.outerHeight();
+            let tooltipWidth = tooltip.outerWidth();
+            let tooltipHeight = tooltip.outerHeight();
             posX -= tooltipWidth / 2;
             posY -= tooltipHeight + 10;
             tooltip.css({ top: posY, left: posX, opacity: .99 }); // Set opacity to 1
@@ -623,10 +701,10 @@ function initStationLogosTooltips() {
         clearTimeout($(this).data('timeout'));
         $('.tooltiptext').remove();
     }).mousemove(function(e){
-        var tooltipWidth = $('.tooltiptext').outerWidth();
-        var tooltipHeight = $('.tooltiptext').outerHeight();
-        var posX = e.pageX - tooltipWidth / 2;
-        var posY = e.pageY - tooltipHeight - 10;
+        let tooltipWidth = $('.tooltiptext').outerWidth();
+        let tooltipHeight = $('.tooltiptext').outerHeight();
+        let posX = e.pageX - tooltipWidth / 2;
+        let posY = e.pageY - tooltipHeight - 10;
 
         $('.tooltiptext').css({ top: posY, left: posX });
     });
