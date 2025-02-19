@@ -12,7 +12,7 @@
 const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
 const delayLocalStationInfo = true;         // Enable to instantly display local station info and disregard signal strength stabilising first
 const prioritiseSvg = false;                // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
-const enableCaseInsensitivePs = false;      // Ignores filename case for RDS PS
+const enableCaseInsensitivePs = false;      // Ignores filename case for RDS PS (for legacy fetching method only)
 const psCaseInsensitiveLevel = 1;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
 const logoEffect = 'fade-animation';        // imageRotate, curtain, fade-animation, fade-grayscale
 const signalDimThreshold = -103;            // dBm
