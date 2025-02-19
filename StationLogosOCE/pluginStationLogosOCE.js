@@ -247,9 +247,9 @@ document.addEventListener("DOMContentLoaded", function() {
                                 setIntervalMain = setInterval(CheckPIorFreq, 1000 / intervalDividerSecondary);
                             }, 10000);
 
-                            setTimeout(() => { // Might actually executing too quickly
+                            setTimeout(() => { // Might actually be executing too quickly
                                 CheckPIorFreq();
-                            }, 10);
+                            }, 12);
 
                             return;
                         }
