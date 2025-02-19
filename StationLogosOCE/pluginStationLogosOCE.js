@@ -1,5 +1,5 @@
 /*
-	Station Logos OCE + Station Info for no RDS by AAD v1.2.7
+	Station Logos OCE + Station Info for no RDS v1.3.0 by AAD
 	https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
 	https://github.com/Highpoint2000/webserver-station-logos
@@ -10,15 +10,19 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
+const delayLocalStationInfo = true;         // Enable to instantly display local station info and disregard signal strength stabilising first
 const prioritiseSvg = false;                // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
 const enableCaseInsensitivePs = true;       // Ignores filename case for RDS PS
 const psCaseInsensitiveLevel = 1;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
 const logoEffect = 'fade-animation';        // imageRotate, curtain, fade-animation, fade-grayscale
 const signalDimThreshold = -103;            // dBm
 const signalHoldThreshold = -101;           // dBm
+const fetchUsingEndpoint = true;            // Set to true
 const decemberSantaHatLogo = true;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const pluginName = "Station Logos OCE";
 
 // Declare stationData
 let stationData = {};
@@ -42,7 +46,7 @@ if (includeLocalStationInfo) {
     }).then(data => {
         stationData = data; // Update stationData with fetched data
     }).catch(error => {
-        console.error('Error fetching station data:', error);
+        console.error(`${pluginName}: Error fetching station data:`, error);
     });
 }
 
@@ -199,7 +203,7 @@ let signalHoldMax = 10 * ((intervalDividerPrimary / intervalDividerSecondary) / 
 let signalHold = 0; // seconds
 let signalDimMax = 30 * ((intervalDividerPrimary / intervalDividerSecondary) / 1.6666); // seconds
 let signalDim = signalDimMax; // seconds
-let localStationDelayCounterMax = 8;
+let localStationDelayCounterMax = delayLocalStationInfo ? 8 : 0;
 let localStationDelayCounter = localStationDelayCounterMax;
 let setIntervalMain;
 let setTimeoutMain;
@@ -230,7 +234,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         dataFreq = Number(data.freq) || Number(targetNode.textContent);
                         if (freq !== 0 && freq !== dataFreq) {
                             freq = dataFreq;
-                            if (debug) console.log('Frequency changed:', freq);
+                            if (debug) console.log(`${pluginName}: Frequency changed:`, freq);
 
                             if (typeof setIntervalMain !== 'undefined') clearInterval(setIntervalMain);
 
@@ -261,7 +265,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function CheckPIorFreq() {
-    if (debug) console.log('freq', (data.freq || document.getElementById("data-frequency").textContent), ' localStationDelayCounter:', localStationDelayCounter, ' signalHold:', signalHold, ' firstLocalstationRun:', firstLocalstationRun, '   ', CheckPIorFreq);
+    if (debug) console.log(`${pluginName}: `, 'freq', (data.freq || document.getElementById("data-frequency").textContent), ' localStationDelayCounter:', localStationDelayCounter, ' signalHold:', signalHold, ' firstLocalstationRun:', firstLocalstationRun, '   ', CheckPIorFreq);
 
     if (!firstLocalstationRun) {
         firstLocalstationRunCounter++;
@@ -285,7 +289,7 @@ function CheckPIorFreq() {
 	const signalCalc = {'dbm': signalData, 'dbf': signalData - 120, 'dbuv': signalData - 108.75}[localStorage.getItem('signalUnit').toLowerCase()] || -30;
 	previousfreqData = freqData;
 	freqData = $('#data-frequency').text().trim();
-	const { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist } = stationData[freqData] || {};
+	const { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist, azi: customAzimuth } = stationData[freqData] || {};
 	signalHold = (signalCalc >= signalHoldThreshold) ? parseInt(signalHoldMax) : signalHold - 1; // Cooldown before hiding local station info
 	signalHold = (signalHold <= 0) ? 0 : signalHold;
 	signalDim = (signalCalc >= signalDimThreshold) ? signalDimMax : signalDim - 1; // Cooldown before dimming logo
@@ -502,29 +506,38 @@ function updateStationLogo(piCode, psCode) {
             End of case-insensitive code
         */
 
+        // Fetch logo
         let supportedExtensions = prioritiseSvg ? ['svg', 'png'] : ['png', 'svg'];
         let found = false;
 
-        // Function to check each path for logo image
-        function checkNextPath(index) {
-            if (found || index >= paths.length) {
-                return;
-            }
+        if (fetchUsingEndpoint) {
 
-            const path = paths[index];
-
-            // Function to check each extension for logo image
-            function checkNextExtension(extensionIndex) {
-                if (found || extensionIndex >= supportedExtensions.length) {
-                    checkNextPath(index + 1);
-                    return;
+            // Fetch available logo list once
+            fetch('/logos-data', {
+                method: 'GET',
+                headers: {
+                    'X-Plugin-Name': 'StationLogosOCEPlugin',
                 }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let availableLogos = data.availableLogos.map(file => file.toLowerCase());
 
-                $.ajax({
-                    url: `${path}.${supportedExtensions[extensionIndex]}`,
-                    method: 'HEAD',
-                    success: function () {
-                        logoImage.attr('src', `${path}.${supportedExtensions[extensionIndex]}`)
+                function checkNextPath(index) {
+                    if (found || index >= paths.length) {
+                        return;
+                    }
+
+                    const path = paths[index];
+
+                    // Check if any available logo matches expected filename
+                    let matchingLogo = supportedExtensions
+                        .map(ext => `${path}.${ext}`)
+                        .find(file => availableLogos.includes(file.split('/').pop().toLowerCase())); // Compare filenames case-insensitively
+                        if (debug) console.log(`${pluginName}: ${path}`);
+
+                    if (matchingLogo) {
+                        logoImage.attr('src', matchingLogo)
                             .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
                             .css('display', 'block')
                             .css('image-rendering', 'auto')
@@ -532,17 +545,59 @@ function updateStationLogo(piCode, psCode) {
                         logoPIPSVisible = true;
                         found = true;
                         logoRotate = false;
-                    },
-                    error: function () {
-                        checkNextExtension(extensionIndex + 1);
+                    } else {
+                        checkNextPath(index + 1);
                     }
-                });
+                }
+
+                checkNextPath(0); // Start checking paths
+            })
+            .catch(err => console.error(`${pluginName}: Failed to fetch logo list`, err));
+
+        } else {
+
+            // Function to check each path for logo image
+            function checkNextPath(index) {
+                if (found || index >= paths.length) {
+                    return;
+                }
+
+                const path = paths[index];
+
+                // Function to check each extension for logo image
+                function checkNextExtension(extensionIndex) {
+                    if (found || extensionIndex >= supportedExtensions.length) {
+                        checkNextPath(index + 1);
+                        return;
+                    }
+
+                    const url = `${path}.${supportedExtensions[extensionIndex]}`;
+                    fetch(url, { method: 'HEAD' })
+                    .then(response => {
+                        if (response.ok) {
+                            logoImage.attr('src', url)
+                                .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
+                                .css('display', 'block')
+                                .css('image-rendering', 'auto')
+                                .attr('class', '');
+                            logoPIPSVisible = true;
+                            found = true;
+                            logoRotate = false;
+                        } else {
+                            checkNextExtension(extensionIndex + 1);
+                        }
+                    })
+                    .catch(() => {
+                        checkNextExtension(extensionIndex + 1);
+                    });
+                }
+
+                checkNextExtension(0); // Start checking extensions
             }
 
-            checkNextExtension(0); // Start checking extensions
-        }
+            checkNextPath(0); // Start checking paths
 
-        checkNextPath(0); // Start checking paths
+        }
 
         // Replace local station field if it exists with TX info field
         if (logoLocal) {
@@ -645,7 +700,7 @@ function TXInfoField() {
 
 // Local station field
 function LocalStationInfoField() {
-	let { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist } = stationData[freqData] || {};
+	let { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist, azi: customAzimuth } = stationData[freqData] || {};
     let imperialUnits = localStorage.getItem("imperialUnits");
 	localInfo = document.createElement('div');
 	localInfo.id = 'local-info-container';
@@ -659,7 +714,11 @@ function LocalStationInfoField() {
             <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
         </h4>
         <span class="text-small">
-            <span>${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} ${customStationDist && !isNaN(customStationDist) ? ' • ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' • ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')}</span>
+            <span>
+              ${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} 
+              ${customStationDist && !isNaN(customStationDist) ? ' \u2022 ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' \u2022 ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')} 
+              ${customAzimuth !== undefined ? ' \u2022 ' + customAzimuth + '\u00B0' : ''}
+            </span>
         </span>
 	`;
 	let existingElements = document.querySelectorAll('#local-info-container');
@@ -674,40 +733,82 @@ function LocalStationInfoField() {
 }
 
 // Tooltip
-function initStationLogosTooltips() {
-    $('.tooltip-station-logos').hover(function(e){
-        let tooltipText = $(this).data('tooltip');
-        // Add a delay of 500 milliseconds before creating and appending the tooltip
+function initStationLogosTooltips(target = null) {
+    // Define scope: all tooltips or specific one if target is provided
+    const tooltips = target ? $(target) : $('.tooltip-station-logos');
+    
+    // Unbind existing event handlers before rebinding to avoid duplication
+    tooltips.off('mouseenter mouseleave');
+    
+    tooltips.hover(function () {
+        if ($(this).closest('.popup-content').length) {
+            return;
+        }
+        
+        var tooltipText = $(this).data('tooltip');
+        var placement = $(this).data('tooltip-placement') || 'top'; // Default to 'top'
+        
+        // Clear existing timeouts
         $(this).data('timeout', setTimeout(() => {
-            let tooltip = $('<div class="tooltiptext"></div>').html(tooltipText);
-            $('body').append(tooltip);
-
-            let posX = e.pageX;
-            let posY = e.pageY;
-
-            let tooltipWidth = tooltip.outerWidth();
-            let tooltipHeight = tooltip.outerHeight();
-            posX -= tooltipWidth / 2;
-            posY -= tooltipHeight + 10;
-            tooltip.css({ top: posY, left: posX, opacity: .99 }); // Set opacity to 1
-            // For touchscreen devices
-            if ((/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent)) && ('ontouchstart' in window || navigator.maxTouchPoints)) {
-                setTimeout(() => { $('.tooltiptext').remove(); }, 10000);
-                document.addEventListener('touchstart', function() { setTimeout(() => { $('.tooltiptext').remove(); }, 500); });
-            }
-        }, 500));
-    }, function() {
-        // Clear the timeout if the mouse leaves before the delay completes
-        clearTimeout($(this).data('timeout'));
-        $('.tooltiptext').remove();
-    }).mousemove(function(e){
-        let tooltipWidth = $('.tooltiptext').outerWidth();
-        let tooltipHeight = $('.tooltiptext').outerHeight();
-        let posX = e.pageX - tooltipWidth / 2;
-        let posY = e.pageY - tooltipHeight - 10;
-
-        $('.tooltiptext').css({ top: posY, left: posX });
-    });
+            $('.tooltip-wrapper').remove();
+            
+            var tooltip = $(`
+                <div class="tooltip-wrapper">
+                    <div class="tooltiptext">${tooltipText}</div>
+                </div>
+            `);
+                $('body').append(tooltip);
+                
+                var tooltipEl = $('.tooltiptext');
+                var tooltipWidth = tooltipEl.outerWidth();
+                var tooltipHeight = tooltipEl.outerHeight();
+                var targetEl = $(this);
+                var targetOffset = targetEl.offset();
+                var targetWidth = targetEl.outerWidth();
+                var targetHeight = targetEl.outerHeight();
+                
+                // Compute position
+                var posX, posY;
+                switch (placement) {
+                    case 'bottom':
+                    posX = targetOffset.left + targetWidth / 2 - tooltipWidth / 2;
+                    posY = targetOffset.top + targetHeight + 10;
+                    break;
+                    case 'left':
+                    posX = targetOffset.left - tooltipWidth - 10;
+                    posY = targetOffset.top + targetHeight / 2 - tooltipHeight / 2;
+                    break;
+                    case 'right':
+                    posX = targetOffset.left + targetWidth + 10;
+                    posY = targetOffset.top + targetHeight / 2 - tooltipHeight / 2;
+                    break;
+                    case 'top':
+                    default:
+                    posX = targetOffset.left + targetWidth / 2 - tooltipWidth / 2;
+                    posY = targetOffset.top - tooltipHeight - 10;
+                    break;
+                }
+                
+                // Apply positioning
+                tooltipEl.css({ top: posY, left: posX, opacity: 1 });
+                
+            }, 300));
+        }, function () {
+            clearTimeout($(this).data('timeout'));
+            
+            setTimeout(() => {
+                $('.tooltip-wrapper').fadeOut(300, function () {
+                    $(this).remove(); 
+                });
+            }, 100); 
+        });
+        
+        $('.popup-content').off('mouseenter').on('mouseenter', function () {
+            clearTimeout($('.tooltip').data('timeout'));
+            $('.tooltip-wrapper').fadeOut(300, function () {
+                $(this).remove(); 
+            });
+        });
 }
 
 })();
