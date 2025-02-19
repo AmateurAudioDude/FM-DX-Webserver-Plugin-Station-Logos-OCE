@@ -23,7 +23,8 @@ This plugin displays station logos for stations with and without RDS data, targe
 
 v1.3.0
 ------
-* Logo filename is fetched from a list during RDS decoding rather than attempting to load each decoded name (no more 404 errors)
+* Logo filename is fetched from a list during RDS decoding rather than attempting to load each RDS PS decoded name (no more 404 errors)
+* Case insensitive for Linux without producing 404 errors due to case sensitivity being checked from a list
 * Faster and more responsive loading/unloading of logos
 * Added option to delay local (no RDS) info and logo
 * Added option to include azimuth for local (no RDS) info
