@@ -13,7 +13,7 @@ const includeLocalStationInfo = true;       // Set to false to disable displayin
 const delayLocalStationInfo = true;         // Enable to instantly display local station info and disregard signal strength stabilising first
 const prioritiseSvg = false;                // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
 const enableCaseInsensitivePs = true;       // Ignores filename case for RDS PS
-const psCaseInsensitiveLevel = 1;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
+const psCaseInsensitiveLevel = 0;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
 const logoEffect = 'fade-animation';        // imageRotate, curtain, fade-animation, fade-grayscale
 const signalDimThreshold = -103;            // dBm
 const signalHoldThreshold = -101;           // dBm
@@ -521,7 +521,7 @@ function updateStationLogo(piCode, psCode) {
             })
             .then(response => response.json())
             .then(data => {
-                let availableLogos = data.availableLogos.map(file => file.toLowerCase());
+                let availableLogos = data.availableLogos.map(file => file.toLowerCase()); // Store lowercase filenames
 
                 function checkNextPath(index) {
                     if (found || index >= paths.length) {
@@ -530,23 +530,28 @@ function updateStationLogo(piCode, psCode) {
 
                     const path = paths[index];
 
-                    // Check if any available logo matches expected filename
+                    // Check if any available logo matches expected filename (case-insensitive)
                     let matchingLogo = supportedExtensions
                         .map(ext => `${path}.${ext}`)
-                        .find(file => availableLogos.includes(file.split('/').pop().toLowerCase())); // Compare filenames case-insensitively
-                        if (debug) console.log(`${pluginName}: ${path}`);
+                        .find(file => availableLogos.includes(file.split('/').pop().toLowerCase()));
+
+                    if (debug) console.log(`${pluginName}: Checking path ${path}`);
 
                     if (matchingLogo) {
-                        logoImage.attr('src', matchingLogo)
-                            .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
-                            .css('display', 'block')
-                            .css('image-rendering', 'auto')
-                            .attr('class', '');
-                        logoPIPSVisible = true;
-                        found = true;
-                        logoRotate = false;
+                        let correctFilename = data.availableLogos.find(file => file.toLowerCase() === matchingLogo.split('/').pop().toLowerCase());
+
+                        if (correctFilename) {
+                            logoImage.attr('src', `/logos/${correctFilename}`) // Use the correct case-sensitive filename
+                                .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
+                                .css('display', 'block')
+                                .css('image-rendering', 'auto')
+                                .attr('class', '');
+                            logoPIPSVisible = true;
+                            found = true;
+                            logoRotate = false;
+                        }
                     } else {
-                        checkNextPath(index + 1);
+                        checkNextPath(index + 1); // Continue checking next path
                     }
                 }
 
