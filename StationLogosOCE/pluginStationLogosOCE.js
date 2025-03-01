@@ -11,7 +11,8 @@
 
 const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
 const delayLocalStationInfo = true;         // Enable to instantly display local station info and disregard signal strength stabilising first
-const prioritiseSvg = false;                // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
+const prioritiseSvg = true;                 // Display 'svg' file if both 'svg' and 'png' files exist for tuned station
+const prioritiseSvgLocal = false;           // Display 'svg' file if both 'svg' and 'png' files exist for tuned station (for stations without RDS)
 const enableCaseInsensitivePs = false;      // Ignores filename case for RDS PS (for legacy fetching method only)
 const psCaseInsensitiveLevel = 1;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
 const logoEffect = 'fade-animation';        // imageRotate, curtain, fade-animation, fade-grayscale
@@ -655,7 +656,7 @@ function updateLocalStationInfo() {
             `${localpath}local/_${freqData}`
         ];
 
-        let supportedExtensions = prioritiseSvg ? ['svg', 'png'] : ['png', 'svg'];
+        let supportedExtensions = prioritiseSvgLocal ? ['svg', 'png'] : ['png', 'svg'];
         let foundLocal = false;
 
         // Function to check each path for logo image
