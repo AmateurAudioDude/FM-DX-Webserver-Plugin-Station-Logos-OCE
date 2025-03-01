@@ -24,6 +24,10 @@ const decemberSantaHatLogo = true;
 
 const pluginName = "Station Logos OCE";
 
+const basePath = window.location.pathname.replace(/\/?$/, '/');
+const logosPath = `${basePath}logos`.replace(/\/+/g, '/');          // /logos
+const apiPath = `${basePath}logos-data`.replace(/\/+/g, '/');       // /logos-data
+
 // Declare stationData
 let stationData = {};
 
@@ -35,7 +39,7 @@ if (includeLocalStationInfo) {
 
     let dataFilePath = `${protocol}//${hostname}`;
     if (port) { dataFilePath += `:${port}`; }
-    dataFilePath += '/logos/json/localstationdata.json';
+    dataFilePath += `${logosPath}/json/localstationdata.json`;
 
     // Fetch localstationdata.json
     fetch(dataFilePath).then(response => {
@@ -188,7 +192,7 @@ document.getElementById('flags-container-phone').innerHTML = `
 	</div>
 `;
 
-const localpath = '/logos/'; // Path to local logo images
+const localpath = `${logosPath}/`; // Path to local logo images
 let logoImage;
 let logoLocal;
 let freqData;
@@ -515,7 +519,7 @@ function updateStationLogo(piCode, psCode) {
         if (fetchUsingEndpoint) {
 
             // Fetch available logo list once
-            fetch('/logos-data', {
+            fetch(`${apiPath}`, {
                 method: 'GET',
                 headers: {
                     'X-Plugin-Name': 'StationLogosOCEPlugin',
@@ -543,7 +547,7 @@ function updateStationLogo(piCode, psCode) {
                         let correctFilename = data.availableLogos.find(file => file.toLowerCase() === matchingLogo.split('/').pop().toLowerCase());
 
                         if (correctFilename) {
-                            logoImage.attr('src', `/logos/${correctFilename}`) // Use the correct case-sensitive filename
+                            logoImage.attr('src', `${logosPath}/${correctFilename}`) // Use the correct case-sensitive filename
                                 .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
                                 .css('display', 'block')
                                 .css('image-rendering', 'auto')
