@@ -1,8 +1,8 @@
 /*
-	Station Logos OCE + Station Info for no RDS v1.3.0 by AAD
-	https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
+    Station Logos OCE + Station Info for no RDS v1.3.0 by AAD
+    https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
-	https://github.com/Highpoint2000/webserver-station-logos
+    https://github.com/Highpoint2000/webserver-station-logos
 */
 
 (() => {
