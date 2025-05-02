@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Mobile HTML
 document.getElementById('flags-container-phone').innerHTML = `
-	<div id="flags-container-phone" class="panel-33">
+	<div id="flags-container-phone" class="panel-33" style="background-color: transparent;">
 		<h2 class="show-phone">
 			<div id="logo-container-phone" style="width: auto; height: 70px; display: flex; justify-content: center; align-items: center; margin: auto">
 				<img id="station-logo-phone" src="${defaultImagePath}" alt="station-logo-phone" style="max-width: 160px; padding: 1px 2px; max-height: 100%; margin-top: 0; margin-bottom: 8px; border-radius: 8px; display: block; image-rendering: auto">
