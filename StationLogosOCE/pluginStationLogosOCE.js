@@ -720,7 +720,7 @@ function LocalStationInfoField() {
 	if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) localInfo.style.backgroundColor = "transparent";
 	localInfo.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
 	localInfo.innerHTML = `
-        <h2 style="margin-top: 0" class="mb-0 show-phone" >
+        <h2 style="margin-top: 0" class="mb-0 show-phone">
             <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
         </h2>
         <h4 class="m-0">
