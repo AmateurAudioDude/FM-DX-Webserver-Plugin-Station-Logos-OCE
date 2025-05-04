@@ -170,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Mobile HTML
+if (window.location.pathname !== '/setup') {
 document.getElementById('flags-container-phone').innerHTML = `
 	<div id="flags-container-phone" class="panel-33" style="background-color: transparent;">
 		<h2 class="show-phone">
@@ -197,6 +198,7 @@ document.getElementById('flags-container-phone').innerHTML = `
 		</h3>
 	</div>
 `;
+}
 
 const localpath = `${logosPath}/`; // Path to local logo images
 let logoImage;
@@ -271,7 +273,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Create observer
         const observer = new MutationObserver(observerCallback);
-        observer.observe(targetNode, config);
+        if (window.location.pathname !== '/setup') observer.observe(targetNode, config);
 
     });
 });
@@ -309,20 +311,22 @@ function CheckPIorFreq() {
 
 	// Dim logo on low signal
 	let img = document.getElementById(imgLogoImage);
-	if (signalDim) {
-		img.className = '';
-		if (logoRotate) {
-			img.classList.add('logoFull', logoEffect);
-            setTimeout(() => {
-                img.classList.remove(logoEffect);
-            }, 128000);
-		} else {
-			img.classList.add('logoFull');
-		}
-	} else {
-		img.className = '';
-		img.classList.add('logoDim');
-	}
+    if (window.location.pathname !== '/setup') {
+        if (signalDim) {
+            img.className = '';
+            if (logoRotate) {
+                img.classList.add('logoFull', logoEffect);
+                setTimeout(() => {
+                    img.classList.remove(logoEffect);
+                }, 128000);
+            } else {
+                img.classList.add('logoFull');
+            }
+        } else {
+            img.className = '';
+            img.classList.add('logoDim');
+        }
+    }
 
 	// Check if confirmed PI code exists
 	if (freqData) {
