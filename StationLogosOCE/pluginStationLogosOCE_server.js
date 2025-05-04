@@ -33,13 +33,18 @@ updateLogoList();
 
 // Monitor folder for changes and debounce updates
 const logoDir = path.join(__dirname, '../../web/logos');
-fs.watch(logoDir, (eventType, filename) => {
-    if (eventType === 'rename' || eventType === 'change') {
-        if (debounceTimer) clearTimeout(debounceTimer);
+fs.access(logoDir, fs.constants.F_OK, (err) => {
+    if (err) return; // Folder doesn't exist, do nothing
 
-        debounceTimer = setTimeout(() => {
-            updateLogoList();
-        }, 10000);
+    try {
+        fs.watch(logoDir, (eventType, filename) => {
+            if (eventType === 'rename' || eventType === 'change') {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => updateLogoList(), 10000);
+            }
+        });
+    } catch (e) {
+        console.error('Failed to watch directory:', e);
     }
 });
 
