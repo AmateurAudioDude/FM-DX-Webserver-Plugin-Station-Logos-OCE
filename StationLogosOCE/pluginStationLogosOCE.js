@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Insert the new HTML code after the named <div>
-    document.getElementById("ps-container").insertAdjacentHTML('afterend', LogoContainerHtml);
+    if (window.location.pathname !== '/setup') document.getElementById("ps-container").insertAdjacentHTML('afterend', LogoContainerHtml);
 
     // The new HTML for the div element with the Play / Stop button
     let buttonHTML = '<div class="panel-10 no-bg h-100 m-0 m-right-20 hide-phone" style="width: 88px; margin-right: 20px !important;">' +
@@ -162,11 +162,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let buttonDiv = document.createElement('div');
     buttonDiv.innerHTML = buttonHTML;
     // Replace the original div element with the new HTML
-    originalDiv.outerHTML = buttonDiv.outerHTML;
+    if (window.location.pathname !== '/setup') originalDiv.outerHTML = buttonDiv.outerHTML;
 
-    document.getElementById('ps-container').style.padding = '12px';
+    if (window.location.pathname !== '/setup') document.getElementById('ps-container').style.padding = '12px';
 
-    document.getElementById('station-logo').oncontextmenu = function(e) { e.preventDefault(); };
+    if (window.location.pathname !== '/setup') document.getElementById('station-logo').oncontextmenu = function(e) { e.preventDefault(); };
 });
 
 // Mobile HTML
