@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.0 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.1 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     //// Server-side code ////
@@ -23,7 +23,7 @@ function updateLogoList() {
             logError(`${pluginName}: Error reading logo directory:`, err);
             return;
         }
-        logoFiles = files.filter(file => file.endsWith('.png') || file.endsWith('.svg'));
+        logoFiles = files.filter(file => file.endsWith('.webp') || file.endsWith('.png') || file.endsWith('.svg'));
         logInfo(`${pluginName}: ${logoFiles.length} images found`);
     });
 }

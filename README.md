@@ -12,14 +12,21 @@ This plugin displays station logos for stations with and without RDS data, targe
 > ### Options
 >
 > - `includeLocalStationInfo`: Set to true to enable logos for stations without [RDS](https://en.wikipedia.org/wiki/Radio_Data_System). Files are to be stored in FM-DX Webserver `/web/logos/local` folder.   
-> - `prioritiseSvg`: Set to true to display 'svg' file if both 'svg' and 'png' files exist for tuned station.   
+> - `prioritiseSvg`: Set to true to display 'svg' file if both 'svg' and 'webp' files exist for tuned station.   
+
+> [!TIP]
+> PNG files can be converted to WebP lossess files using XnConvert, setting the format to "WebP", "Lossless", and "Compreesion Method" to "6".
 
 ## For stations without RDS data
 * Entries can be added in `localstationdata.json` (stored in `/web/logos/json`). Once edited, confirm each line except the last ends with a comma.
 
-* Images can be named with an underscore, followed by station frequency (stored in `/web/logos/local`). Example: `_87.600.png`
+* Images can be named with an underscore, followed by station frequency (stored in `/web/logos/local`). Example: `_87.600.webp`
 
 * To change logo animation for tentatively loaded PS RDS, Open `pluginStationLogosOCE.js`, find and edit the line containing `const logoEffect`.
+
+v1.3.1
+------
+* Added support for WebP image format
 
 v1.3.0
 ------
