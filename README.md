@@ -15,7 +15,7 @@ This plugin displays station logos for stations with and without RDS data, targe
 > - `prioritiseSvg`: Set to true to display 'svg' file if both 'svg' and 'webp' files exist for tuned station.   
 
 > [!TIP]
-> PNG files can be converted to WebP lossess files using XnConvert, setting the format to "WebP", "Lossless", and "Compression Method" to "6".
+> PNG files can be converted to WebP lossess files using XnConvert, setting the format to `WebP`, `Lossless`, and `Compression Method` to `6`.
 
 ## For stations without RDS data
 * Entries can be added in `localstationdata.json` (stored in `/web/logos/json`). Once edited, confirm each line except the last ends with a comma.
