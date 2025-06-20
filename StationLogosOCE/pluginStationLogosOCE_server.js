@@ -5,6 +5,8 @@
     //// Server-side code ////
 */
 
+'use strict';
+
 const pluginName = "Station Logos OCE";
 
 // Library imports

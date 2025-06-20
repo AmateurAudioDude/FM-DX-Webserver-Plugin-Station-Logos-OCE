@@ -5,6 +5,8 @@
     https://github.com/Highpoint2000/webserver-station-logos
 */
 
+'use strict';
+
 (() => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -201,9 +203,7 @@ document.getElementById('flags-container-phone').innerHTML = `
 }
 
 const localpath = `${logosPath}/`; // Path to local logo images
-let logoImage;
-let logoLocal;
-let freqData;
+let freqData, logoImage, logoLocal, mobileRefresh, mobileRefreshNew;
 let intervalDividerPrimary = 5;
 let intervalDividerSecondary = 1.25;
 let firstLocalstationRun = false;
@@ -279,6 +279,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function CheckPIorFreq() {
+    let imgLogoImage, previousfreqData;
     if (debug) console.log(`${pluginName}: `, 'freq', (data.freq || document.getElementById("data-frequency").textContent), ' localStationDelayCounter:', localStationDelayCounter, ' signalHold:', signalHold, ' firstLocalstationRun:', firstLocalstationRun, '   ', CheckPIorFreq);
 
     if (!firstLocalstationRun) {
