@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.1 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.2 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -223,8 +223,44 @@ let freq = 0;
 let dataFreq = 0;
 let debug = false;
 
+const optionSaveAntenna = (!!document.getElementById('data-ant'));
+
+// Function to get the current antenna value
+function getCurrentAntennaValue() {
+  const dataAntInput = document.querySelector('.data-ant input');
+  if (dataAntInput) {
+    const currentAntennaText = dataAntInput.value || dataAntInput.placeholder;
+    // Find the option that matches the current text
+    const options = document.querySelectorAll('.data-ant li.option');
+    for (let option of options) {
+      if (option.textContent.trim() === currentAntennaText.trim()) {
+        return !optionSaveAntenna ? '0' : (option.getAttribute('data-value') || '0');
+      }
+    }
+  }
+  return '0'; // Default antenna value
+}
+
+function tryUpdateLocalInfoFromAntennaChange() {
+  const localInfoPanel = document.querySelector('#local-info-container');
+  const usingFallbackData = !!localInfoPanel && localInfoPanel.getAttribute('data-tooltip')?.includes('local station info');
+
+  if (usingFallbackData) {
+    document.querySelectorAll('#local-info-container').forEach(el => el.remove());
+    LocalStationInfoField();
+  }
+}
+
 // Check PI or local frequency
 document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('.data-ant li.option').forEach(option => {
+      option.addEventListener('click', () => {
+        setTimeout(() => {
+          tryUpdateLocalInfoFromAntennaChange();
+        }, 1000);
+      });
+    });
+
     $(document).ready(function() {
         setIntervalMain = setInterval(CheckPIorFreq, 1000 / intervalDividerPrimary);
         setTimeoutMain = setTimeout(() => {
@@ -261,7 +297,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                             setTimeout(() => { // Might actually be executing too quickly
                                 CheckPIorFreq();
-                            }, 12);
+                            }, 20);
 
                             return;
                         }
@@ -304,7 +340,27 @@ function CheckPIorFreq() {
 	const signalCalc = {'dbm': signalData, 'dbf': signalData - 120, 'dbuv': signalData - 108.75}[localStorage.getItem('signalUnit').toLowerCase()] || -30;
 	previousfreqData = freqData;
 	freqData = $('#data-frequency').text().trim();
-	const { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist, azi: customAzimuth } = stationData[freqData] || {};
+
+    const currentAntenna = getCurrentAntennaValue();
+    const rawEntry = stationData[freqData];
+    const entryList = Array.isArray(rawEntry)
+      ? rawEntry.filter(entry => entry && typeof entry === 'object')  // clean array
+      : rawEntry && typeof rawEntry === 'object'
+        ? [rawEntry]
+        : [];
+    const matchedEntry = entryList.find(entry => {
+      return !entry.ant || entry.ant === currentAntenna;
+    }) || {};
+    const {
+      name: customStationName,
+      loc: customStationLoc,
+      pwr: customStationPwr,
+      pol: customStationPol,
+      dist: customStationDist,
+      azi: customAzimuth,
+      ant: customAnt
+    } = matchedEntry;
+
 	signalHold = (signalCalc >= signalHoldThreshold) ? parseInt(signalHoldMax) : signalHold - 1; // Cooldown before hiding local station info
 	signalHold = (signalHold <= 0) ? 0 : signalHold;
 	signalDim = (signalCalc >= signalDimThreshold) ? signalDimMax : signalDim - 1; // Cooldown before dimming logo
@@ -722,7 +778,26 @@ function TXInfoField() {
 
 // Local station field
 function LocalStationInfoField() {
-	let { name: customStationName, loc: customStationLoc, pwr: customStationPwr, pol: customStationPol, dist: customStationDist, azi: customAzimuth } = stationData[freqData] || {};
+    const currentAntenna = getCurrentAntennaValue();
+    const rawEntry = stationData[freqData];
+    const entryList = Array.isArray(rawEntry)
+      ? rawEntry.filter(entry => entry && typeof entry === 'object')  // clean array
+      : rawEntry && typeof rawEntry === 'object'
+        ? [rawEntry]
+        : [];
+    const matchedEntry = entryList.find(entry => {
+      return !entry.ant || entry.ant === currentAntenna;
+    }) || {};
+    const {
+      name: customStationName,
+      loc: customStationLoc,
+      pwr: customStationPwr,
+      pol: customStationPol,
+      dist: customStationDist,
+      azi: customAzimuth,
+      ant: customAnt
+    } = matchedEntry;
+
     let imperialUnits = localStorage.getItem("imperialUnits");
 	localInfo = document.createElement('div');
 	localInfo.id = 'local-info-container';
