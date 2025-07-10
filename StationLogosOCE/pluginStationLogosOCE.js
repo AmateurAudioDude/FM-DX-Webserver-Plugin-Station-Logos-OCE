@@ -25,7 +25,7 @@ const decemberSantaHatLogo = true;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const pluginVersion = '1.3.1';
+const pluginVersion = '1.3.2';
 const pluginName = "Station Logos OCE";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
@@ -253,13 +253,29 @@ function tryUpdateLocalInfoFromAntennaChange() {
 
 // Check PI or local frequency
 document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll('.data-ant li.option').forEach(option => {
-      option.addEventListener('click', () => {
-        setTimeout(() => {
-          tryUpdateLocalInfoFromAntennaChange();
-        }, 1000);
-      });
-    });
+    function setupAntennaObserver() {
+        const dataAntContainer = document.querySelector('.data-ant');
+        if (!dataAntContainer) return;
+
+        let antennaUpdateTimeout = null;
+
+        const observer = new MutationObserver(() => {
+            clearTimeout(antennaUpdateTimeout);
+
+            antennaUpdateTimeout = setTimeout(() => {
+                tryUpdateLocalInfoFromAntennaChange();
+            }, 1000);
+        });
+
+        observer.observe(dataAntContainer, {
+            attributes: true,
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
+    }
+
+    setupAntennaObserver();
 
     $(document).ready(function() {
         setIntervalMain = setInterval(CheckPIorFreq, 1000 / intervalDividerPrimary);
