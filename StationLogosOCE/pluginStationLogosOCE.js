@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.2 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.3 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -221,6 +221,7 @@ let setIntervalMain;
 let setTimeoutMain;
 let freq = 0;
 let dataFreq = 0;
+let lastLocalAntenna = 0;
 let debug = false;
 
 const optionSaveAntenna = (!!document.getElementById('data-ant'));
@@ -719,12 +720,35 @@ if (localStorage.getItem('signalUnit') === null) {
 
 // Display local station logo JS code
 function updateLocalStationInfo() {
+    const currentAntenna = getCurrentAntennaValue();
+    const newAntenna = currentAntenna !== lastLocalAntenna;
+    lastLocalAntenna = currentAntenna;
+
+    const rawEntry = stationData[freqData];
+    const entryList = Array.isArray(rawEntry)
+      ? rawEntry.filter(entry => entry && typeof entry === 'object')  // clean array
+      : rawEntry && typeof rawEntry === 'object'
+        ? [rawEntry]
+        : [];
+    const matchedEntry = entryList.find(entry => {
+      return !entry.ant || entry.ant === currentAntenna;
+    }) || {};
+    const {
+      name: customStationName,
+      loc: customStationLoc,
+      pwr: customStationPwr,
+      pol: customStationPol,
+      dist: customStationDist,
+      azi: customAzimuth,
+      ant: customAnt
+    } = matchedEntry;
+
     firstLocalstationRun = true;
     localStationDelayCounter++;
-    if (localStationDelayCounter <= localStationDelayCounterMax) return;
+    if (localStationDelayCounter <= localStationDelayCounterMax && !newAntenna) return;
     localStationDelayCounter = 0;
 	if (window.matchMedia("(orientation: portrait)").matches) { mobileRefreshNew = 'p'; } else { mobileRefreshNew = 'l'; }
-    if (!logoLocal || mobileRefresh !== mobileRefreshNew) {
+    if (!logoLocal || mobileRefresh !== mobileRefreshNew || newAntenna) {
 		logoLocal = true;
 		if (window.matchMedia("(orientation: portrait)").matches) { mobileRefresh = 'p'; } else { mobileRefresh = 'l'; }
 
@@ -734,9 +758,17 @@ function updateLocalStationInfo() {
 
 		LocalStationInfoField();
 
-        const paths = [
-            `${localpath}local/_${freqData}`
-        ];
+        let paths;
+
+        if (Number(currentAntenna) === 0 || customAnt === undefined) {
+            paths = [
+                `${localpath}local/_${freqData}`
+            ];
+        } else {
+            paths = [
+                `${localpath}local/_${freqData}_${currentAntenna}`
+            ];
+        }
 
         let supportedExtensions = prioritiseSvgLocal ? ['svg', 'webp', 'png'] : ['webp', 'png', 'svg'];
         let foundLocal = false;
