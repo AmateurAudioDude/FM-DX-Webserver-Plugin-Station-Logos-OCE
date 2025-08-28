@@ -7,6 +7,7 @@ This plugin displays station logos for stations with and without RDS data, targe
 * Extract `logos` folder from file `logos.zip` and transfer to FM-DX-Webserver `web` folder
 * Restart FM-DX-Webserver if required
 * Login to Adminstrator Panel and enable plugin
+* Restart FM-DX-Webserver again if required
 
 > [!NOTE]
 > ### Options
