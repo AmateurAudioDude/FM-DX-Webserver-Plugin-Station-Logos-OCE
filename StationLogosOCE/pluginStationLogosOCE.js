@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.3 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.4 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -12,6 +12,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
+const newLocalInfoDisplayMethod = true;     // Set to true if the legacy method of displaying local station info causes issues
 const delayLocalStationInfo = true;         // Enable to instantly display local station info and disregard signal strength stabilising first
 const prioritiseSvg = true;                 // Display 'svg' file if both 'svg' and 'webp' files exist for tuned station
 const prioritiseSvgLocal = false;           // Display 'svg' file if both 'svg' and 'png' files exist for tuned station (for stations without RDS)
@@ -25,7 +26,7 @@ const decemberSantaHatLogo = true;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const pluginVersion = '1.3.3';
+const pluginVersion = '1.3.4';
 const pluginName = "Station Logos OCE";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
@@ -243,13 +244,21 @@ function getCurrentAntennaValue() {
 }
 
 function tryUpdateLocalInfoFromAntennaChange() {
-  const localInfoPanel = document.querySelector('#local-info-container');
-  const usingFallbackData = !!localInfoPanel && localInfoPanel.getAttribute('data-tooltip')?.includes('local station info');
+    if (newLocalInfoDisplayMethod) {
+      const usingFallbackData = !!documentLocal && documentLocal.getAttribute('data-tooltip')?.includes('local station info');
 
-  if (usingFallbackData) {
-    document.querySelectorAll('#local-info-container').forEach(el => el.remove());
-    LocalStationInfoField();
-  }
+      if (usingFallbackData) {
+        LocalStationInfoField();
+      }
+    } else {
+      const localInfoPanel = document.querySelector('#local-info-container');
+      const usingFallbackData = !!localInfoPanel && localInfoPanel.getAttribute('data-tooltip')?.includes('local station info');
+
+      if (usingFallbackData) {
+        document.querySelectorAll('#local-info-container').forEach(el => el.remove());
+        LocalStationInfoField();
+      }
+    }
 }
 
 // Check PI or local frequency
@@ -712,7 +721,15 @@ function updateStationLogo(piCode, psCode) {
 
 let documentLocal = document.querySelector('div.flex-container.flex-phone.flex-phone-column div.panel-33.hover-brighten.tooltip');
 let rtInfo = document.getElementById('rt-container');
-let localInfo = document.getElementById('local-info-container');
+    let isCurrentlyShowingLocalData;
+    let localDataElement;
+    let localInfo;
+    if (newLocalInfoDisplayMethod) {
+        isCurrentlyShowingLocalData = false;
+        localDataElement = null;
+    } else {
+        localInfo = document.getElementById('local-info-container');
+    }
 
 if (localStorage.getItem('signalUnit') === null) {
 	localStorage.setItem('signalUnit', 'dbf');
@@ -817,11 +834,39 @@ function updateLocalStationInfo() {
 // TX Info field
 function TXInfoField() {
 	documentLocal.style.display = 'block';
-	let existingElements = document.querySelectorAll('#local-info-container');
-	existingElements.forEach(function(element) {
-		element.parentNode.removeChild(localInfo);
-		element.remove();
-	});
+
+    if (newLocalInfoDisplayMethod) {
+        // Only reset if showing local data
+        if (isCurrentlyShowingLocalData) {
+            // Remove local data element and restore original styling
+            if (localDataElement && localDataElement.parentNode) {
+                localDataElement.parentNode.removeChild(localDataElement);
+                localDataElement = null;
+            }
+
+            // Reset to original attributes
+            documentLocal.className = 'panel-33 hover-brighten tooltip no-bg-phone';
+            documentLocal.style.backgroundColor = '';
+            documentLocal.setAttribute('data-tooltip', 'This panel contains the current TX info when RDS is loaded.<br><strong>Clicking on this panel copies the info into the clipboard.</strong>');
+
+            // Show original webserver content
+            const originalContainer = documentLocal.querySelector('#data-station-container');
+            if (originalContainer) {
+                //originalContainer.style.display = 'block';
+            }
+
+            // Reset flag
+            isCurrentlyShowingLocalData = false;
+
+            initStationLogosTooltips(documentLocal);
+        }
+    } else {
+        let existingElements = document.querySelectorAll('#local-info-container');
+        existingElements.forEach(function(element) {
+            element.parentNode.removeChild(localInfo);
+            element.remove();
+        });
+    }
 }
 
 // Local station field
@@ -847,35 +892,79 @@ function LocalStationInfoField() {
     } = matchedEntry;
 
     let imperialUnits = localStorage.getItem("imperialUnits");
-	localInfo = document.createElement('div');
-	localInfo.id = 'local-info-container';
-	localInfo.className = 'panel-33 hover-brighten tooltip-station-logos';
-	if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) localInfo.style.backgroundColor = "transparent";
-	localInfo.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
-	localInfo.innerHTML = `
-        <h2 style="margin-top: 0" class="mb-0 show-phone">
-            <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
-        </h2>
-        <h4 class="m-0">
-            <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
-        </h4>
-        <span class="text-small">
-            <span>
-              ${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} 
-              ${customStationDist && !isNaN(customStationDist) ? ' \u2022 ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' \u2022 ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')} 
-              ${customAzimuth !== undefined ? ' \u2022 ' + customAzimuth + '\u00B0' : ''}
+
+    if (newLocalInfoDisplayMethod) {
+        // Mark that showing local data
+        isCurrentlyShowingLocalData = true;
+
+        // Hide original webserver content
+        const originalContainer = documentLocal.querySelector('#data-station-container');
+        if (originalContainer) {
+            originalContainer.style.display = 'none';
+        }
+
+        // Create local data element and add it to documentLocal
+        localDataElement = document.createElement('div');
+        localDataElement.className = 'local-station-data';
+        localDataElement.innerHTML = `
+            <h2 style="margin-top: 0" class="mb-0 show-phone">
+                <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
+            </h2>
+            <h4 class="m-0">
+                <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
+            </h4>
+            <span class="text-small">
+                <span>
+                  ${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'}
+                  ${customStationDist && !isNaN(customStationDist) ? ' \u2022 ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' \u2022 ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')}
+                  ${customAzimuth !== undefined ? ' \u2022 ' + customAzimuth + '\u00B0' : ''}
+                </span>
             </span>
-        </span>
-	`;
-	let existingElements = document.querySelectorAll('#local-info-container');
-	existingElements.forEach(function(element) {
-		element.style.display = 'none';
-		element.remove();
-	});
-	rtInfo.parentNode.insertBefore(localInfo, rtInfo.nextSibling);
-	localInfo.style.display = 'block';
-	documentLocal.style.display = 'none';
-    initStationLogosTooltips();
+        `;
+
+        // Update documentLocal styling for local data
+        documentLocal.className = 'panel-33 hover-brighten tooltip-station-logos';
+        if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) {
+            documentLocal.style.backgroundColor = "transparent";
+        }
+        //documentLocal.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
+
+        // Add local data element to documentLocal
+        documentLocal.appendChild(localDataElement);
+        documentLocal.style.display = 'block';
+        initStationLogosTooltips(documentLocal);
+    } else {
+        localInfo = document.createElement('div');
+        localInfo.id = 'local-info-container';
+        localInfo.className = 'panel-33 hover-brighten tooltip-station-logos';
+        if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) localInfo.style.backgroundColor = "transparent";
+        localInfo.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
+        localInfo.innerHTML = `
+            <h2 style="margin-top: 0" class="mb-0 show-phone">
+                <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
+            </h2>
+            <h4 class="m-0">
+                <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
+            </h4>
+            <span class="text-small">
+                <span>
+                  ${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} 
+                  ${customStationDist && !isNaN(customStationDist) ? ' \u2022 ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' \u2022 ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')} 
+                  ${customAzimuth !== undefined ? ' \u2022 ' + customAzimuth + '\u00B0' : ''}
+                </span>
+            </span>
+        `;
+
+        let existingElements = document.querySelectorAll('#local-info-container');
+        existingElements.forEach(function(element) {
+            element.style.display = 'none';
+            element.remove();
+        });
+        rtInfo.parentNode.insertBefore(localInfo, rtInfo.nextSibling);
+        localInfo.style.display = 'block';
+        documentLocal.style.display = 'none';
+        initStationLogosTooltips();
+    }
 }
 
 // Tooltip
@@ -946,7 +1035,7 @@ function initStationLogosTooltips(target = null) {
                 $('.tooltip-wrapper').fadeOut(300, function () {
                     $(this).remove(); 
                 });
-            }, 100); 
+            }, 100);
         });
         
         $('.popup-content').off('mouseenter').on('mouseenter', function () {
