@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.4 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.5 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -12,21 +12,17 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const includeLocalStationInfo = true;       // Set to false to disable displaying localstationdata.json info
-const newLocalInfoDisplayMethod = true;     // Set to true if the legacy method of displaying local station info causes issues
 const delayLocalStationInfo = true;         // Enable to instantly display local station info and disregard signal strength stabilising first
 const prioritiseSvg = true;                 // Display 'svg' file if both 'svg' and 'webp' files exist for tuned station
 const prioritiseSvgLocal = false;           // Display 'svg' file if both 'svg' and 'png' files exist for tuned station (for stations without RDS)
-const enableCaseInsensitivePs = false;      // Ignores filename case for RDS PS (for legacy fetching method only)
-const psCaseInsensitiveLevel = 1;           // Setting from 1-5, higher means likely more "404 File Not Found" errors. Level 5 not recommended
 const logoEffect = 'fade-animation';        // imageRotate, curtain, fade-animation, fade-grayscale
-const signalDimThreshold = -103;            // dBm
-const signalHoldThreshold = -101;           // dBm
-const fetchUsingEndpoint = true;            // Set to true
-const decemberSantaHatLogo = true;
+const signalDimThreshold = -103;            // Value in dBm
+const signalHoldThreshold = -101;           // Value in dBm
+const decemberSantaHatLogo = true;          // Santa hat as default logo during December
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const pluginVersion = '1.3.4';
+const pluginVersion = '1.3.5';
 const pluginName = "Station Logos OCE";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
@@ -64,8 +60,8 @@ if (includeLocalStationInfo) {
 }
 
 // CSS code
-let styleElement = document.createElement('style');
-let cssCode = `
+document.head.appendChild(Object.assign(document.createElement('style'), {
+  textContent: `
 	@keyframes fadeIn {
 		0% { opacity: 0; }
 		75% { opacity: 0; }
@@ -115,9 +111,8 @@ let cssCode = `
 
 	.logoFull { filter: brightness(100%) }
 	.logoDim { filter: brightness(50%) }
-`;
-styleElement.appendChild(document.createTextNode(cssCode));
-document.head.appendChild(styleElement);
+  `
+}));
 
 let defaultImagePath;
 
@@ -143,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '        <img id="station-logo" src="' + defaultImagePath + '" alt="Default logo" style="width: auto; max-width: 160px; padding: 0px 2px; margin: 0 8px; max-height: 100%; margin-top: 18px; border-radius: 4px; display: block; image-rendering: auto">' +
         '    </div>' +
         '</div>';
-    } else { // if (showPeakmeter === 'false' || showPeakmeter === null) {
+    } else {
         LogoContainerHtml = '<div style="width: 5%; min-width: 2.5%"></div> <!-- Spacer -->' +
         '<div class="panel-25 m-0 hide-phone" style="width: 48%; max-width: 48%; min-width: 160px">' +
         '    <div id="logo-container" style="width: auto; height: 72px; display: flex; justify-content: center; align-items: center; margin: auto">' +
@@ -165,42 +160,31 @@ document.addEventListener('DOMContentLoaded', function () {
     let buttonDiv = document.createElement('div');
     buttonDiv.innerHTML = buttonHTML;
     // Replace the original div element with the new HTML
-    if (window.location.pathname !== '/setup') originalDiv.outerHTML = buttonDiv.outerHTML;
-
-    if (window.location.pathname !== '/setup') document.getElementById('ps-container').style.padding = '12px';
-
-    if (window.location.pathname !== '/setup') document.getElementById('station-logo').oncontextmenu = function(e) { e.preventDefault(); };
+    if (window.location.pathname !== '/setup') {
+        originalDiv.outerHTML = buttonDiv.outerHTML;
+        document.getElementById('ps-container').style.padding = '12px';
+        document.getElementById('station-logo').oncontextmenu = function(e) { e.preventDefault(); };
+    }
 });
 
 // Mobile HTML
 if (window.location.pathname !== '/setup') {
-document.getElementById('flags-container-phone').innerHTML = `
-	<div id="flags-container-phone" class="panel-33" style="background-color: transparent;">
-		<h2 class="show-phone">
-			<div id="logo-container-phone" style="width: auto; height: 70px; display: flex; justify-content: center; align-items: center; margin: auto">
-				<img id="station-logo-phone" src="${defaultImagePath}" alt="station-logo-phone" style="max-width: 160px; padding: 1px 2px; max-height: 100%; margin-top: 0; margin-bottom: 8px; border-radius: 8px; display: block; image-rendering: auto">
-			</div>
-			<br>
-				<div class="data-pty text-color-default"></div>
-		</h2>
-		<h3 style="margin-top:0;margin-bottom:0;" class="color-4 flex-center">
-		<br>
-                <span class="data-tp">TP</span>
-                <span style="margin-left: 15px;" class="data-ta">TA</span>
-                <div style="display:inline-block">
-                    <span style="margin-left: 20px;display: block;margin-top: 2px;" class="data-flag"></span>
-                </div>
-                <span class="pointer stereo-container" style="position: relative; margin-left: 20px;" role="button" aria-label="Stereo / Mono toggle" tabindex="0">
-                    <div class="circle-container">
-                        <div class="circle data-st circle1"></div>
-                        <div class="circle data-st circle2"></div>
-                    </div>
-                    <span class="overlay tooltip" data-tooltip="Stereo / Mono toggle. <br><strong>Click to toggle."></span>
-                </span>                                                               
-                <span style="margin-left: 15px;" class="data-ms">MS</span>
-		</h3>
-	</div>
-`;
+    const container = document.querySelector('#flags-container-phone .show-phone');
+
+    if (container) {
+      const logoContainer = document.createElement('div');
+      logoContainer.id = 'logo-container-phone';
+      logoContainer.style.cssText = 'width: auto; height: 70px; display: flex; justify-content: center; align-items: center; margin: auto; margin-bottom: 32px;';
+
+      const logoImage = document.createElement('img');
+      logoImage.id = 'station-logo-phone';
+      logoImage.src = defaultImagePath;  // Make sure defaultImagePath is defined
+      logoImage.alt = 'station-logo-phone';
+      logoImage.style.cssText = 'max-width: 160px; padding: 1px 2px; max-height: 100%; border-radius: 8px; display: block; image-rendering: auto;';
+
+      logoContainer.appendChild(logoImage);
+      container.prepend(logoContainer);  // Insert at top
+    }
 }
 
 const localpath = `${logosPath}/`; // Path to local logo images
@@ -223,6 +207,7 @@ let setTimeoutMain;
 let freq = 0;
 let dataFreq = 0;
 let lastLocalAntenna = 0;
+let isLocalActive = false;
 let debug = false;
 
 const optionSaveAntenna = (!!document.getElementById('data-ant'));
@@ -244,21 +229,12 @@ function getCurrentAntennaValue() {
 }
 
 function tryUpdateLocalInfoFromAntennaChange() {
-    if (newLocalInfoDisplayMethod) {
-      const usingFallbackData = !!documentLocal && documentLocal.getAttribute('data-tooltip')?.includes('local station info');
+  const usingFallbackData = !!documentLocal && (documentLocal.getAttribute('data-tooltip')?.includes('local station info') || isLocalActive);
 
-      if (usingFallbackData) {
-        LocalStationInfoField();
-      }
-    } else {
-      const localInfoPanel = document.querySelector('#local-info-container');
-      const usingFallbackData = !!localInfoPanel && localInfoPanel.getAttribute('data-tooltip')?.includes('local station info');
-
-      if (usingFallbackData) {
-        document.querySelectorAll('#local-info-container').forEach(el => el.remove());
-        LocalStationInfoField();
-      }
-    }
+  if (usingFallbackData) {
+    TXInfoField();
+    LocalStationInfoField();
+  }
 }
 
 // Check PI or local frequency
@@ -459,208 +435,27 @@ function updateStationLogo(piCode, psCode) {
             mobileRefresh = 'l';
         }
 
-        /*
-            Case-insensitive code
-        */
-
-        function toTitleCase(str) {
-            return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('_');
-        }
-
-        function generateLevel1CaseVariations(str) {
-            // Level 1: Basic variations (Original, lowercase, uppercase, first letter uppercase, title case)
-            return [
-                str,
-                toTitleCase(str),
-                str.toLowerCase(),
-                str.toUpperCase(),
-                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()  // First letter uppercase
-            ];
-        }
-
-        function generateLevel2CaseVariations(str) {
-            // Level 2: Random case variation, alternating case, reversed case
-            const randomCaseVariation = str.split('').map(char => 
-                Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()
-            ).join('');
-
-            return [
-                str,
-                toTitleCase(str),
-                str.toLowerCase(),
-                str.toUpperCase(),
-                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(),
-                randomCaseVariation  // Random case variation
-            ];
-        }
-
-        function generateLevel3CaseVariations(str) {
-            // Level 3: Random uppercase/lowercase for each character
-            const randomCaseVariation = str.split('').map(char => 
-                Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()
-            ).join('');
-
-            const alternatingCase = str.split('').map((char, index) => 
-                index % 2 === 0 ? char.toUpperCase() : char.toLowerCase()
-            ).join('');
-
-            const reversedCase = str.split('').map(char => 
-                char === char.toUpperCase() ? char.toLowerCase() : char.toUpperCase()
-            ).join('');
-
-            const allUpperCase = str.toUpperCase();
-
-            const allLowerCase = str.toLowerCase();
-
-            const capitalizedFirstLetter = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-
-            return [
-                str,
-                toTitleCase(str),
-                allLowerCase,
-                allUpperCase,
-                capitalizedFirstLetter, // First letter uppercase
-                randomCaseVariation, // Random case variation
-                alternatingCase, // Alternating case (AbCdEf...)
-                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(),  // First letter uppercase
-                reversedCase // Opposite of each character
-            ];
-        }
-
-        function generateLevel4CaseVariations(str) {
-            // Level 4: level 1 + 2 + 3
-            const level1 = generateLevel1CaseVariations(str);
-            const level2 = generateLevel2CaseVariations(str);
-            const level3 = generateLevel3CaseVariations(str);
-
-            return [
-                ...level1,
-                ...level2,
-                ...level3
-            ];
-        }
-
-        function generateLevel5CaseVariations(str) {
-            // Level 5: All possible combinations of upper/lowercase for each character
-            function generateAllCaseCombinations(str) {
-                const results = [];
-                const numCombinations = 1 << str.length; // 2^length of the string
-
-                for (let i = 0; i < numCombinations; i++) {
-                    let combination = '';
-                    for (let j = 0; j < str.length; j++) {
-                        combination += (i & (1 << j)) ? str.charAt(j).toUpperCase() : str.charAt(j).toLowerCase();
-                    }
-                    results.push(combination);
-                }
-
-                return results;
-            }
-
-            const allCombinations = generateAllCaseCombinations(str);
-
-            return [
-                str,
-                toTitleCase(str),
-                str.toUpperCase(),
-                str.toLowerCase(),
-                str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(), // First letter uppercase
-                ...allCombinations // All possible case combinations
-            ];
-        }
-
         let paths;
 
-        if (enableCaseInsensitivePs) {
-            switch (psCaseInsensitiveLevel) {
-                case 0:
-                    paths = [`${localpath}${piCode}_${psCode}`];
-                    break;
-                case 1:
-                    paths = generateLevel1CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
-                    break;
-                case 2:
-                    paths = generateLevel2CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
-                    break;
-                case 3:
-                    paths = generateLevel3CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
-                    break;
-                case 4:
-                    paths = generateLevel4CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
-                    break;
-                case 5:
-                    paths = generateLevel5CaseVariations(psCode).map(variation => `${localpath}${piCode}_${variation}`);
-                    break;
-                default:
-                    paths = [`${localpath}${piCode}_${psCode}`];
-                    break;
-            }
-        } else {
-            paths = [`${localpath}${piCode}_${psCode}`];
-        }
+        paths = [`${localpath}${piCode}_${psCode}`];
 
         paths.unshift(`${localpath}${piCode}`);
-
-        /*
-            End of case-insensitive code
-        */
 
         // Fetch logo
         let supportedExtensions = prioritiseSvg ? ['svg', 'webp', 'png'] : ['webp', 'png', 'svg'];
         let found = false;
 
-        if (fetchUsingEndpoint) {
+        // Fetch available logo list once
+        fetch(`${apiPath}`, {
+            method: 'GET',
+            headers: {
+                'X-Plugin-Name': 'StationLogosOCEPlugin',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            let availableLogos = data.availableLogos.map(file => file.toLowerCase()); // Store lowercase filenames
 
-            // Fetch available logo list once
-            fetch(`${apiPath}`, {
-                method: 'GET',
-                headers: {
-                    'X-Plugin-Name': 'StationLogosOCEPlugin',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                let availableLogos = data.availableLogos.map(file => file.toLowerCase()); // Store lowercase filenames
-
-                function checkNextPath(index) {
-                    if (found || index >= paths.length) {
-                        return;
-                    }
-
-                    const path = paths[index];
-
-                    // Check if any available logo matches expected filename (case-insensitive)
-                    let matchingLogo = supportedExtensions
-                        .map(ext => `${path}.${ext}`)
-                        .find(file => availableLogos.includes(file.split('/').pop().toLowerCase()));
-
-                    if (debug) console.log(`${pluginName}: Checking path ${path}`);
-
-                    if (matchingLogo) {
-                        let correctFilename = data.availableLogos.find(file => file.toLowerCase() === matchingLogo.split('/').pop().toLowerCase());
-
-                        if (correctFilename) {
-                            logoImage.attr('src', `${logosPath}/${correctFilename}`) // Use the correct case-sensitive filename
-                                .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
-                                .css('display', 'block')
-                                .css('image-rendering', 'auto')
-                                .attr('class', '');
-                            logoPIPSVisible = true;
-                            found = true;
-                            logoRotate = false;
-                        }
-                    } else {
-                        checkNextPath(index + 1); // Continue checking next path
-                    }
-                }
-
-                checkNextPath(0); // Start checking paths
-            })
-            .catch(err => console.error(`${pluginName}: Failed to fetch logo list`, err));
-
-        } else {
-
-            // Function to check each path for logo image
             function checkNextPath(index) {
                 if (found || index >= paths.length) {
                     return;
@@ -668,40 +463,34 @@ function updateStationLogo(piCode, psCode) {
 
                 const path = paths[index];
 
-                // Function to check each extension for logo image
-                function checkNextExtension(extensionIndex) {
-                    if (found || extensionIndex >= supportedExtensions.length) {
-                        checkNextPath(index + 1);
-                        return;
+                // Check if any available logo matches expected case-insensitive filename
+                let matchingLogo = supportedExtensions
+                    .map(ext => `${path}.${ext}`)
+                    .find(file => availableLogos.includes(file.split('/').pop().toLowerCase()));
+
+                if (debug) console.log(`${pluginName}: Checking path ${path}`);
+
+                if (matchingLogo) {
+                    let correctFilename = data.availableLogos.find(file => file.toLowerCase() === matchingLogo.split('/').pop().toLowerCase());
+
+                    if (correctFilename) {
+                        logoImage.attr('src', `${logosPath}/${correctFilename}`) // Use the correct case-sensitive filename
+                            .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
+                            .css('display', 'block')
+                            .css('image-rendering', 'auto')
+                            .attr('class', '');
+                        logoPIPSVisible = true;
+                        found = true;
+                        logoRotate = false;
                     }
-
-                    const url = `${path}.${supportedExtensions[extensionIndex]}`;
-                    fetch(url, { method: 'HEAD' })
-                    .then(response => {
-                        if (response.ok) {
-                            logoImage.attr('src', url)
-                                .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
-                                .css('display', 'block')
-                                .css('image-rendering', 'auto')
-                                .attr('class', '');
-                            logoPIPSVisible = true;
-                            found = true;
-                            logoRotate = false;
-                        } else {
-                            checkNextExtension(extensionIndex + 1);
-                        }
-                    })
-                    .catch(() => {
-                        checkNextExtension(extensionIndex + 1);
-                    });
+                } else {
+                    checkNextPath(index + 1); // Continue checking next path
                 }
-
-                checkNextExtension(0); // Start checking extensions
             }
 
             checkNextPath(0); // Start checking paths
-
-        }
+        })
+        .catch(err => console.error(`${pluginName}: Failed to fetch logo list`, err));
 
         // Replace local station field if it exists with TX info field
         if (logoLocal) {
@@ -724,12 +513,8 @@ let rtInfo = document.getElementById('rt-container');
     let isCurrentlyShowingLocalData;
     let localDataElement;
     let localInfo;
-    if (newLocalInfoDisplayMethod) {
-        isCurrentlyShowingLocalData = false;
-        localDataElement = null;
-    } else {
-        localInfo = document.getElementById('local-info-container');
-    }
+    isCurrentlyShowingLocalData = false;
+    localDataElement = null;
 
 if (localStorage.getItem('signalUnit') === null) {
 	localStorage.setItem('signalUnit', 'dbf');
@@ -740,6 +525,8 @@ function updateLocalStationInfo() {
     const currentAntenna = getCurrentAntennaValue();
     const newAntenna = currentAntenna !== lastLocalAntenna;
     lastLocalAntenna = currentAntenna;
+
+    if (newAntenna) TXInfoField(); // Remove local data element
 
     const rawEntry = stationData[freqData];
     const entryList = Array.isArray(rawEntry)
@@ -835,37 +622,18 @@ function updateLocalStationInfo() {
 function TXInfoField() {
 	documentLocal.style.display = 'block';
 
-    if (newLocalInfoDisplayMethod) {
-        // Only reset if showing local data
-        if (isCurrentlyShowingLocalData) {
-            // Remove local data element and restore original styling
-            if (localDataElement && localDataElement.parentNode) {
-                localDataElement.parentNode.removeChild(localDataElement);
-                localDataElement = null;
-            }
-
-            // Reset to original attributes
-            documentLocal.className = 'panel-33 hover-brighten tooltip no-bg-phone';
-            documentLocal.style.backgroundColor = '';
-            documentLocal.setAttribute('data-tooltip', 'This panel contains the current TX info when RDS is loaded.<br><strong>Clicking on this panel copies the info into the clipboard.</strong>');
-
-            // Show original webserver content
-            const originalContainer = documentLocal.querySelector('#data-station-container');
-            if (originalContainer) {
-                //originalContainer.style.display = 'block';
-            }
-
-            // Reset flag
-            isCurrentlyShowingLocalData = false;
-
-            initStationLogosTooltips(documentLocal);
+    // Only reset if showing local data
+    if (isCurrentlyShowingLocalData) {
+        // Remove local data element and restore original styling
+        if (localDataElement && localDataElement.parentNode) {
+            localDataElement.parentNode.removeChild(localDataElement);
+            localDataElement = null;
         }
-    } else {
-        let existingElements = document.querySelectorAll('#local-info-container');
-        existingElements.forEach(function(element) {
-            element.parentNode.removeChild(localInfo);
-            element.remove();
-        });
+
+        isLocalActive = false; // Tooltip code normally here
+
+        // Reset flag
+        isCurrentlyShowingLocalData = false;
     }
 }
 
@@ -893,157 +661,47 @@ function LocalStationInfoField() {
 
     let imperialUnits = localStorage.getItem("imperialUnits");
 
-    if (newLocalInfoDisplayMethod) {
-        // Mark that showing local data
-        isCurrentlyShowingLocalData = true;
+    TXInfoField(); // Clear to prevent possible duplicates
 
-        // Hide original webserver content
-        const originalContainer = documentLocal.querySelector('#data-station-container');
-        if (originalContainer) {
-            originalContainer.style.display = 'none';
-        }
+    // Mark that showing local data
+    isCurrentlyShowingLocalData = true;
 
-        // Create local data element and add it to documentLocal
-        localDataElement = document.createElement('div');
-        localDataElement.className = 'local-station-data';
-        localDataElement.innerHTML = `
-            <h2 style="margin-top: 0" class="mb-0 show-phone">
-                <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
-            </h2>
-            <h4 class="m-0">
-                <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
-            </h4>
-            <span class="text-small">
-                <span>
-                  ${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'}
-                  ${customStationDist && !isNaN(customStationDist) ? ' \u2022 ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' \u2022 ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')}
-                  ${customAzimuth !== undefined ? ' \u2022 ' + customAzimuth + '\u00B0' : ''}
-                </span>
-            </span>
-        `;
-
-        // Update documentLocal styling for local data
-        documentLocal.className = 'panel-33 hover-brighten tooltip-station-logos';
-        if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) {
-            documentLocal.style.backgroundColor = "transparent";
-        }
-        //documentLocal.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
-
-        // Add local data element to documentLocal
-        documentLocal.appendChild(localDataElement);
-        documentLocal.style.display = 'block';
-        initStationLogosTooltips(documentLocal);
-    } else {
-        localInfo = document.createElement('div');
-        localInfo.id = 'local-info-container';
-        localInfo.className = 'panel-33 hover-brighten tooltip-station-logos';
-        if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) localInfo.style.backgroundColor = "transparent";
-        localInfo.setAttribute('data-tooltip', 'This panel contains the current local station info when no RDS is being broadcast.');
-        localInfo.innerHTML = `
-            <h2 style="margin-top: 0" class="mb-0 show-phone">
-                <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
-            </h2>
-            <h4 class="m-0">
-                <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
-            </h4>
-            <span class="text-small">
-                <span>
-                  ${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'} 
-                  ${customStationDist && !isNaN(customStationDist) ? ' \u2022 ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' \u2022 ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')} 
-                  ${customAzimuth !== undefined ? ' \u2022 ' + customAzimuth + '\u00B0' : ''}
-                </span>
-            </span>
-        `;
-
-        let existingElements = document.querySelectorAll('#local-info-container');
-        existingElements.forEach(function(element) {
-            element.style.display = 'none';
-            element.remove();
-        });
-        rtInfo.parentNode.insertBefore(localInfo, rtInfo.nextSibling);
-        localInfo.style.display = 'block';
-        documentLocal.style.display = 'none';
-        initStationLogosTooltips();
+    // Hide original webserver content
+    const originalContainer = documentLocal.querySelector('#data-station-container');
+    if (originalContainer) {
+        originalContainer.style.display = 'none';
     }
-}
 
-// Tooltip
-function initStationLogosTooltips(target = null) {
-    // Define scope: all tooltips or specific one if target is provided
-    const tooltips = target ? $(target) : $('.tooltip-station-logos');
-    
-    // Unbind existing event handlers before rebinding to avoid duplication
-    tooltips.off('mouseenter mouseleave');
-    
-    tooltips.hover(function () {
-        if ($(this).closest('.popup-content').length) {
-            return;
-        }
-        
-        var tooltipText = $(this).data('tooltip');
-        var placement = $(this).data('tooltip-placement') || 'top'; // Default to 'top'
-        
-        // Clear existing timeouts
-        $(this).data('timeout', setTimeout(() => {
-            $('.tooltip-wrapper').remove();
-            
-            var tooltip = $(`
-                <div class="tooltip-wrapper">
-                    <div class="tooltiptext">${tooltipText}</div>
-                </div>
-            `);
-                $('body').append(tooltip);
-                
-                var tooltipEl = $('.tooltiptext');
-                var tooltipWidth = tooltipEl.outerWidth();
-                var tooltipHeight = tooltipEl.outerHeight();
-                var targetEl = $(this);
-                var targetOffset = targetEl.offset();
-                var targetWidth = targetEl.outerWidth();
-                var targetHeight = targetEl.outerHeight();
-                
-                // Compute position
-                var posX, posY;
-                switch (placement) {
-                    case 'bottom':
-                    posX = targetOffset.left + targetWidth / 2 - tooltipWidth / 2;
-                    posY = targetOffset.top + targetHeight + 10;
-                    break;
-                    case 'left':
-                    posX = targetOffset.left - tooltipWidth - 10;
-                    posY = targetOffset.top + targetHeight / 2 - tooltipHeight / 2;
-                    break;
-                    case 'right':
-                    posX = targetOffset.left + targetWidth + 10;
-                    posY = targetOffset.top + targetHeight / 2 - tooltipHeight / 2;
-                    break;
-                    case 'top':
-                    default:
-                    posX = targetOffset.left + targetWidth / 2 - tooltipWidth / 2;
-                    posY = targetOffset.top - tooltipHeight - 10;
-                    break;
-                }
-                
-                // Apply positioning
-                tooltipEl.css({ top: posY, left: posX, opacity: 1 });
-                
-            }, 300));
-        }, function () {
-            clearTimeout($(this).data('timeout'));
-            
-            setTimeout(() => {
-                $('.tooltip-wrapper').fadeOut(300, function () {
-                    $(this).remove(); 
-                });
-            }, 100);
-        });
-        
-        $('.popup-content').off('mouseenter').on('mouseenter', function () {
-            clearTimeout($('.tooltip').data('timeout'));
-            $('.tooltip-wrapper').fadeOut(300, function () {
-                $(this).remove(); 
-            });
-        });
+    // Create local data element and add it to documentLocal
+    localDataElement = document.createElement('div');
+    localDataElement.className = 'local-station-data';
+    localDataElement.innerHTML = `
+        <h2 style="margin-top: 0" class="mb-0 show-phone">
+            <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
+        </h2>
+        <h4 class="m-0">
+            <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
+        </h4>
+        <span class="text-small">
+            <span>
+              ${customStationPwr ? customStationPwr + ' kW [' + customStationPol + ']' : '&nbsp;'}
+              ${customStationDist && !isNaN(customStationDist) ? ' \u2022 ' + Math.round(customStationDist / (imperialUnits === 'true' ? 1.6093 : 1)) + (imperialUnits === 'true' ? ' mi' : ' km') : (typeof customStationDist === 'string' ? ' \u2022 ' + customStationDist + ' ' + (imperialUnits === 'true' ? 'mi' : 'km') : '&nbsp;')}
+              ${customAzimuth !== undefined ? ' \u2022 ' + customAzimuth + '\u00B0' : ''}
+            </span>
+        </span>
+    `;
+
+    // Update documentLocal styling for local data
+    documentLocal.className = 'panel-33 hover-brighten tooltip-station-logos';
+    if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent) && window.matchMedia("(orientation: portrait)").matches || window.innerWidth <= 768) {
+        documentLocal.style.backgroundColor = "transparent";
+    }
+
+    isLocalActive = true; // Tooltip code normally here
+
+    // Add local data element to documentLocal
+    documentLocal.appendChild(localDataElement);
+    documentLocal.style.display = 'block';
 }
 
 // Function for update notification in /setup
