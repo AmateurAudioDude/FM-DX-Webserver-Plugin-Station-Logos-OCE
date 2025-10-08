@@ -130,17 +130,18 @@ let LogoContainerHtml;
 
 document.addEventListener('DOMContentLoaded', function () {
     let isPeakmeterFound = document.getElementById('peak-meter-container');
+    const existsVisualEqPlugin = (localStorage.getItem('visualeqMode') && window.innerWidth > 768) ? 180.625 : 160;
 
     if (showPeakmeter === 'true' || (isPeakmeterFound && !showPeakmeter)) {
         LogoContainerHtml = '<div style="width: 2.95%; min-width: 2.95%"></div> <!-- Spacer -->' +
-        '<div class="panel-25 m-0 hide-phone" style="width: 64%; max-width: 64%; min-width: 160px">' +
+        '<div class="panel-25 m-0 hide-phone" style="width: 64%; max-width: 64%; min-width: ' + existsVisualEqPlugin + 'px">' +
         '    <div id="logo-container" style="width: auto; height: 72px; display: flex; justify-content: center; align-items: center; margin: auto">' +
         '        <img id="station-logo" src="' + defaultImagePath + '" alt="Default logo" style="width: auto; max-width: 160px; padding: 0px 2px; margin: 0 8px; max-height: 100%; margin-top: 18px; border-radius: 4px; display: block; image-rendering: auto">' +
         '    </div>' +
         '</div>';
     } else {
         LogoContainerHtml = '<div style="width: 5%; min-width: 2.5%"></div> <!-- Spacer -->' +
-        '<div class="panel-25 m-0 hide-phone" style="width: 48%; max-width: 48%; min-width: 160px">' +
+        '<div class="panel-25 m-0 hide-phone" style="width: 48%; max-width: 48%; min-width: ' + existsVisualEqPlugin + 'px">' +
         '    <div id="logo-container" style="width: auto; height: 72px; display: flex; justify-content: center; align-items: center; margin: auto">' +
         '        <img id="station-logo" src="' + defaultImagePath + '" alt="Default logo" style="width: auto; max-width: 140px; padding: 0px 2px; margin: 0 8px; max-height: 100%; margin-top: 18px; border-radius: 4px; display: block; image-rendering: auto">' +
         '    </div>' +
