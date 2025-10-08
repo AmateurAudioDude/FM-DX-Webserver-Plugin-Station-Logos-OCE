@@ -130,7 +130,7 @@ let LogoContainerHtml;
 
 document.addEventListener('DOMContentLoaded', function () {
     let isPeakmeterFound = document.getElementById('peak-meter-container');
-    const existsVisualEqPlugin = (localStorage.getItem('visualeqMode') && window.innerWidth > 768) ? 180.625 : 160;
+    const existsVisualEqPlugin = (localStorage.getItem('visualeq_settings') && window.innerWidth > 768) ? 180.625 : 160;
 
     if (showPeakmeter === 'true' || (isPeakmeterFound && !showPeakmeter)) {
         LogoContainerHtml = '<div style="width: 2.95%; min-width: 2.95%"></div> <!-- Spacer -->' +
