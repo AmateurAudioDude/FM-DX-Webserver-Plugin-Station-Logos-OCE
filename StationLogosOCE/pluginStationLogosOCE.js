@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.5 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.6 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -130,7 +130,7 @@ let LogoContainerHtml;
 
 document.addEventListener('DOMContentLoaded', function () {
     let isPeakmeterFound = document.getElementById('peak-meter-container');
-    const existsVisualEqPlugin = (localStorage.getItem('visualeq_settings') && window.innerWidth > 768) ? 180.625 : 160;
+    const existsVisualEqPlugin = (localStorage.getItem('visualeq_settings') && window.innerWidth > 768) ? 182 : 160;
 
     if (showPeakmeter === 'true' || (isPeakmeterFound && !showPeakmeter)) {
         LogoContainerHtml = '<div style="width: 2.95%; min-width: 2.95%"></div> <!-- Spacer -->' +
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '    </div>' +
         '</div>';
     } else {
-        LogoContainerHtml = '<div style="width: 5%; min-width: 2.5%"></div> <!-- Spacer -->' +
+        LogoContainerHtml = '<div style="width: 5.3%; min-width: 2.5%"></div> <!-- Spacer -->' +
         '<div class="panel-25 m-0 hide-phone" style="width: 48%; max-width: 48%; min-width: ' + existsVisualEqPlugin + 'px">' +
         '    <div id="logo-container" style="width: auto; height: 72px; display: flex; justify-content: center; align-items: center; margin: auto">' +
         '        <img id="station-logo" src="' + defaultImagePath + '" alt="Default logo" style="width: auto; max-width: 140px; padding: 0px 2px; margin: 0 8px; max-height: 100%; margin-top: 18px; border-radius: 4px; display: block; image-rendering: auto">' +
