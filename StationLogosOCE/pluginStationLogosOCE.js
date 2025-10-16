@@ -250,6 +250,7 @@ document.addEventListener("DOMContentLoaded", function() {
             clearTimeout(antennaUpdateTimeout);
 
             antennaUpdateTimeout = setTimeout(() => {
+                lastLocalAntenna = getCurrentAntennaValue(); // Update antenna tracking when antenna changes
                 tryUpdateLocalInfoFromAntennaChange();
             }, 1000);
         });
