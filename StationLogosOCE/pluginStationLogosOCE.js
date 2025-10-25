@@ -1,6 +1,6 @@
 /*
     Station Logos OCE + Station Info for no RDS v1.3.6 by AAD
-    https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
+    https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE
 
     https://github.com/Highpoint2000/webserver-station-logos
 */
@@ -22,7 +22,7 @@ const decemberSantaHatLogo = true;          // Santa hat as default logo during 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const pluginVersion = '1.3.5';
+const pluginVersion = '1.3.6';
 const pluginName = "Station Logos OCE";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
