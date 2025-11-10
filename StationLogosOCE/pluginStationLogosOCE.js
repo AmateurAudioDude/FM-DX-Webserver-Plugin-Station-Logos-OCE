@@ -246,6 +246,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let antennaUpdateTimeout = null;
 
+        // --- Main observer ---
         const observer = new MutationObserver(() => {
             clearTimeout(antennaUpdateTimeout);
 
@@ -261,6 +262,105 @@ document.addEventListener("DOMContentLoaded", function() {
             characterData: true,
             subtree: true
         });
+
+        // --- Additional observer ---
+        const ANTENNA_ADDITIONAL_OBSERVER = false;
+
+        if (ANTENNA_ADDITIONAL_OBSERVER) {
+            const input = document.querySelector('#data-ant input');
+            if (input) {
+                const placeholderObserver = new MutationObserver((mutations) => {
+                    for (const mutation of mutations) {
+                        if (mutation.attributeName === 'placeholder') {
+                            clearTimeout(antennaUpdateTimeout);
+
+                            antennaUpdateTimeout = setTimeout(() => {
+                                lastLocalAntenna = getCurrentAntennaValue(); // Update antenna tracking when antenna changes
+                                tryUpdateLocalInfoFromAntennaChange();
+                            }, 1000);
+                        }
+                    }
+                });
+
+                placeholderObserver.observe(input, {
+                    attributes: true,
+                    attributeFilter: ['placeholder']
+                });
+            }
+        }
+
+        // --- Main listener ---
+        const ANTENNA_LISTENER = true;
+
+        if (ANTENNA_LISTENER) {
+            let lastProcessedTime = 0;
+            let reconnectAttempts = 0;
+            let executeFunction = false;
+            let ant;
+            let previousAnt;
+
+            const TIMEOUT_DURATION = 500;
+
+            window.addEventListener('DOMContentLoaded', (event) => {
+                executeFunction = true;
+            });
+
+            function connectWebSocket() {
+                if (window.socket.readyState === WebSocket.OPEN) {
+                    reconnectAttempts = 0;
+                }
+
+                window.socket.addEventListener('message', (event) => {
+                    handle_ANTENNA_LISTENER(event);
+                });
+
+                window.socket.addEventListener('close', () => {
+                    console.log(`[${pluginName}] ANTENNA_LISTENER: WebSocket closed. Attempting to reconnect...`);
+                    attemptReconnect();
+                });
+
+                window.socket.addEventListener('error', (err) => {
+                    attemptReconnect();
+                });
+            }
+
+            function attemptReconnect() {
+                if (reconnectAttempts >= 500) return;
+
+                setTimeout(() => {
+                    reconnectAttempts++;
+                    connectWebSocket();
+                }, 10000);
+            }
+
+            function handle_ANTENNA_LISTENER(event) {
+                const now = Date.now();
+
+                if (now - lastProcessedTime < TIMEOUT_DURATION) return;
+                lastProcessedTime = now;
+
+                const { ant } = JSON.parse(event.data);
+
+                if (!previousAnt) previousAnt = ant;
+
+                function updateAnt(ant) {
+                    if (previousAnt !== ant) {
+                        clearTimeout(antennaUpdateTimeout);
+
+                        antennaUpdateTimeout = setTimeout(() => {
+                            lastLocalAntenna = getCurrentAntennaValue(); // Update antenna tracking when antenna changes
+                            tryUpdateLocalInfoFromAntennaChange();
+                        }, 1000);
+                    }
+
+                    previousAnt = ant;
+                }
+
+                if (executeFunction) updateAnt(ant);
+            }
+
+            connectWebSocket();
+        }
     }
 
     setupAntennaObserver();
