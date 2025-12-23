@@ -439,7 +439,7 @@ function CheckPIorFreq() {
 	}
 
 	const piCode = $('#data-pi').text().toUpperCase().trim();
-	const psCode = $('#data-ps').text().trim().replace(/\s+/g, '_').replace(/_+$/, '');
+	const psCode = $('#data-ps').text().trim().replace(/^_+/, '').replace(/\s+/g, '_').replace(/_+$/, '');
 	const signalData = $('#data-signal').text().trim();
 	const signalCalc = {'dbm': signalData, 'dbf': signalData - 120, 'dbuv': signalData - 108.75}[localStorage.getItem('signalUnit').toLowerCase()] || -30;
 	previousfreqData = freqData;

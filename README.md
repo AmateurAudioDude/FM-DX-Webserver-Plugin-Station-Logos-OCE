@@ -1,6 +1,6 @@
 # Station Logos OCE plugin for FM-DX Webserver
 
-This plugin displays station logos for stations with and without RDS data, targeted at Australian FM-DX Webserver owners.
+This plugin displays station logos for stations with and without RDS data, targeted at Oceania FM-DX Webserver owners.
 
 * [Download the latest zip file](https://github.com/AmateurAudioDude/FX-DX-Webserver-Station-Logos-OCE/archive/refs/heads/main.zip)
 * Transfer `StationLogosOCE` folder, and `StationLogosOCE.js` to FM-DX-Webserver `plugins` folder
