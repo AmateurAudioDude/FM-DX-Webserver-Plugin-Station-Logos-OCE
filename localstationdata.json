@@ -1,8 +1,0 @@
-{
-    "87.600":   {   "name": "Local Radio",                "loc": "City",              "pwr": "1",       "pol": "V",  "dist": "10",  "azi": "90"   },
-    "87.700":   [
-                {   "name": "Local Radio 1",              "loc": "City",              "pwr": "1",       "pol": "V",  "dist": "10",  "azi": "90",    "ant": "0"  },
-                {   "name": "Local Radio 2",              "loc": "City",              "pwr": "1",       "pol": "V",  "dist": "10",  "azi": "90",    "ant": "1"  }
-                ],
-    "87.900":   {   "name": "Local Radio",                "loc": "City",              "pwr": "1",       "pol": "V",  "dist": "10",  "azi": "90"   }
-}
