@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.6 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.7 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     //// Server-side code ////
@@ -59,8 +59,6 @@ endpointsRouter.get('/logos-data', (req, res) => {
     const pluginHeader = req.get('X-Plugin-Name') || 'NoPlugin';
 
     if (pluginHeader === 'StationLogosOCEPlugin') {
-        //ipAddress = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
-        //logInfo(`${pluginName}: Custom router accessed by ${ipAddress}`);
         res.json({ availableLogos: logoFiles });
     } else {
         res.status(403).json({ error: 'Unauthorised' });
