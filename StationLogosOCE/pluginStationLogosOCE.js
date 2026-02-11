@@ -427,6 +427,71 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+// Monitor #data-pi
+const observeDataPi = () => {
+  const waitForElement = new MutationObserver((_, observer) => {
+    const target = document.querySelector('#data-pi');
+    if (!target) return;
+
+    // Stop watching once found
+    observer.disconnect();
+
+    let lastValue = target.textContent.trim();
+
+    const dataObserver = new MutationObserver(() => {
+      const piValue = target.textContent.trim();
+
+      // Prevent duplicate triggers
+      if (piValue === lastValue) return;
+      lastValue = piValue;
+
+      if (piValue !== '' && !piValue.includes('?') && isLocalActive) {
+        TXInfoField(); // Instantly remove Local info on valid PI code
+      }
+    });
+
+    dataObserver.observe(target, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+
+    console.log('#data-pi found and observing');
+  });
+
+  // Watch DOM until #data-pi appears
+  waitForElement.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+
+  // Check immediately
+  const existing = document.querySelector('#data-pi');
+  if (existing) {
+    waitForElement.disconnect();
+    let lastValue = existing.textContent.trim();
+
+    const dataObserver = new MutationObserver(() => {
+      const piValue = existing.textContent.trim();
+
+      if (piValue === lastValue) return;
+      lastValue = piValue;
+
+      if (piValue !== '' && !piValue.includes('?') && isLocalActive) {
+        TXInfoField(); // Instantly remove Local info on valid PI code
+      }
+    });
+
+    dataObserver.observe(existing, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+  }
+};
+
+observeDataPi();
+
 function CheckPIorFreq() {
     let imgLogoImage, previousfreqData;
     if (debug) console.log(`${pluginName}: `, 'freq', (data.freq || document.getElementById("data-frequency").textContent), ' localStationDelayCounter:', localStationDelayCounter, ' signalHold:', signalHold, ' firstLocalstationRun:', firstLocalstationRun, '   ', CheckPIorFreq);
