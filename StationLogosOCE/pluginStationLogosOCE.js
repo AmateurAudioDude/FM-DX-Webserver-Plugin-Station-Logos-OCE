@@ -218,6 +218,7 @@ let freq = 0;
 let dataFreq = 0;
 let lastLocalAntenna = 0;
 let isLocalActive = false;
+let lastSignalDimState = null; // null = uninitialised
 let debug = false;
 
 const optionSaveAntenna = (!!document.getElementById('data-ant'));
@@ -520,7 +521,7 @@ function CheckPIorFreq() {
 
     // Fetch signal strength from FM-DX Webserver (main.js) else search for #data-signal
     if (isSignalDefined) {
-        signalCalc = signalData[0] - 120 || -30;
+        signalCalc = signalData[7] - 120 || signalData[0] || -30;
     } else {
         const rawSignal = $('#data-signal').text().trim();
         const valSignal = rawSignal === '' ? null : Number(rawSignal);
@@ -558,23 +559,27 @@ function CheckPIorFreq() {
 	signalHold = (signalHold <= 0) ? 0 : signalHold;
 	signalDim = (signalCalc >= SIGNAL_DIM_THRESHOLD) ? signalDimMax : signalDim - 1; // Cooldown before dimming logo
 	signalDim = (signalDim <= 0) ? 0 : signalDim;
+    signalDim = parseInt(signalDim);
 
 	// Dim logo on low signal
 	let img = document.getElementById(imgLogoImage);
     if (window.location.pathname !== '/setup') {
-        if (signalDim) {
+        const isDimmed = !signalDim;
+        if (lastSignalDimState !== isDimmed) {
+            lastSignalDimState = isDimmed;
             img.className = '';
-            if (logoRotate) {
-                img.classList.add('logoFull', LOGO_EFFECT);
-                setTimeout(() => {
-                    img.classList.remove(LOGO_EFFECT);
-                }, 128000);
+            if (!isDimmed) {
+                if (logoRotate) {
+                    img.classList.add('logoFull', LOGO_EFFECT);
+                    setTimeout(() => {
+                        img.classList.remove(LOGO_EFFECT);
+                    }, 128000);
+                } else {
+                    img.classList.add('logoFull');
+                }
             } else {
-                img.classList.add('logoFull');
+                img.classList.add('logoDim');
             }
-        } else {
-            img.className = '';
-            img.classList.add('logoDim');
         }
     }
 
