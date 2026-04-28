@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.7 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.8 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -514,8 +514,23 @@ function CheckPIorFreq() {
 
 	const piCode = $('#data-pi').text().toUpperCase().trim();
     const psCode = $('#data-ps').text().trim().replace(/^_+/, '').replace(/\s+/g, '_').replace(/_+$/, '');
-	const signalData = $('#data-signal').text().trim();
-	const signalCalc = {'dbm': signalData, 'dbf': signalData - 120, 'dbuv': signalData - 108.75}[localStorage.getItem('signalUnit').toLowerCase()] || -30;
+
+    let signalCalc = -30;
+    const isSignalDefined = typeof signalData !== 'undefined';
+
+    // Fetch signal strength from FM-DX Webserver (main.js) else search for #data-signal
+    if (isSignalDefined) {
+        signalCalc = signalData[0] - 120 || -30;
+    } else {
+        const rawSignal = $('#data-signal').text().trim();
+        const valSignal = rawSignal === '' ? null : Number(rawSignal);
+        const unit = localStorage.getItem('signalUnit')?.toLowerCase();
+        signalCalc = valSignal == null || Number.isNaN(valSignal) ? -30 : ({ dbm: valSignal, dbf: valSignal - 120, dbuv: valSignal - 108.75 }[unit] ?? -30);
+    }
+
+	previousfreqData = freqData;
+	freqData = $('#data-frequency').text().trim();
+
 	previousfreqData = freqData;
 	freqData = $('#data-frequency').text().trim();
 

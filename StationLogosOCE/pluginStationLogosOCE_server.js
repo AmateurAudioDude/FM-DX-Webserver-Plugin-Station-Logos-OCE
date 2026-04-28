@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.7 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.8 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugins
 
     //// Server-side code ////
@@ -65,4 +65,4 @@ endpointsRouter.get('/logos-data', (req, res) => {
     }
 });
 
-logInfo(`${pluginName}: Custom router added to endpoints router.`);
+logInfo(`${pluginName}: Custom router added (/logos-data) to endpoints router.`);
