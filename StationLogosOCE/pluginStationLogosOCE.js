@@ -534,9 +534,6 @@ function CheckPIorFreq() {
 	previousfreqData = freqData;
 	freqData = $('#data-frequency').text().trim();
 
-	previousfreqData = freqData;
-	freqData = $('#data-frequency').text().trim();
-
     const currentAntenna = getCurrentAntennaValue();
     const rawEntry = stationData[freqData];
     const entryList = Array.isArray(rawEntry)
