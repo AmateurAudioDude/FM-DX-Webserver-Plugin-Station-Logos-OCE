@@ -23,7 +23,7 @@ const DECEMBER_SANTA_HAT_LOGO = true;           // Santa hat as default logo dur
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const pluginVersion = '1.3.7';
+const pluginVersion = '1.3.8';
 const pluginName = "Station Logos OCE";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
@@ -197,7 +197,9 @@ if (window.location.pathname !== '/setup') {
     }
 }
 
-const localpath = `${logosPath}/`; // Path to local logo images
+const localpath = `${logosPath}/`;      // Path to local logo images
+const LOGO_EFFECT_START_DELAY = 2000;   // ms before animation begins
+const LOGO_EFFECT_DURATION = 120000;    // ms animation duration
 let freqData, logoImage, logoLocal, mobileRefresh, mobileRefreshNew;
 let intervalDividerPrimary = 5;
 let intervalDividerSecondary = 1.25;
@@ -218,7 +220,7 @@ let freq = 0;
 let dataFreq = 0;
 let lastLocalAntenna = 0;
 let isLocalActive = false;
-let lastSignalDimState = null; // null = uninitialised
+let logoRotateStartTime = 0;
 let debug = false;
 
 const optionSaveAntenna = (!!document.getElementById('data-ant'));
@@ -521,7 +523,7 @@ function CheckPIorFreq() {
 
     // Fetch signal strength from FM-DX Webserver (main.js) else search for #data-signal
     if (isSignalDefined) {
-        signalCalc = signalData[7] - 120 || signalData[0] || -30;
+        signalCalc = signalData[7] - 120 || signalData[0] - 120 || -30;
     } else {
         const rawSignal = $('#data-signal').text().trim();
         const valSignal = rawSignal === '' ? null : Number(rawSignal);
@@ -561,25 +563,33 @@ function CheckPIorFreq() {
 	signalDim = (signalDim <= 0) ? 0 : signalDim;
     signalDim = parseInt(signalDim);
 
+	// Track animation session start
+	if (logoRotate) {
+		if (!logoRotateStartTime) logoRotateStartTime = Date.now();
+	} else {
+		logoRotateStartTime = 0;
+	}
+
 	// Dim logo on low signal
 	let img = document.getElementById(imgLogoImage);
     if (window.location.pathname !== '/setup') {
-        const isDimmed = !signalDim;
-        if (lastSignalDimState !== isDimmed) {
-            lastSignalDimState = isDimmed;
-            img.className = '';
-            if (!isDimmed) {
-                if (logoRotate) {
-                    img.classList.add('logoFull', LOGO_EFFECT);
-                    setTimeout(() => {
-                        img.classList.remove(LOGO_EFFECT);
-                    }, 128000);
+        if (signalDim) {
+            img.classList.remove('logoDim');
+            if (logoRotate) {
+                img.classList.add('logoFull');
+                const elapsed = Date.now() - logoRotateStartTime;
+                if (elapsed >= LOGO_EFFECT_START_DELAY && elapsed < LOGO_EFFECT_START_DELAY + LOGO_EFFECT_DURATION) {
+                    img.classList.add(LOGO_EFFECT);
                 } else {
-                    img.classList.add('logoFull');
+                    img.classList.remove(LOGO_EFFECT);
                 }
             } else {
-                img.classList.add('logoDim');
+                img.classList.remove(LOGO_EFFECT);
+                img.classList.add('logoFull');
             }
+        } else {
+            img.classList.remove('logoFull', LOGO_EFFECT);
+            img.classList.add('logoDim');
         }
     }
 
@@ -697,8 +707,7 @@ function updateStationLogo(piCode, psCode) {
         // Rotating logo during PS loading
         if (!found && !logoRotate && !logoPIPSVisible) {
             logoImage.attr('src', defaultImagePath)
-                .attr('alt', 'Empty logo')
-                .attr('class', LOGO_EFFECT);
+                .attr('alt', 'Empty logo');
             logoRotate = true;
         }
     }
