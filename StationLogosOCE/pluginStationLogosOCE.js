@@ -160,18 +160,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // Insert the new HTML code after the named <div>
     if (window.location.pathname !== '/setup') document.getElementById("ps-container").insertAdjacentHTML('afterend', LogoContainerHtml);
 
-    // The new HTML for the div element with the Play / Stop button
-    let buttonHTML = '<div class="panel-10 no-bg h-100 m-0 m-right-20 hide-phone" style="width: 88px; margin-right: 20px !important;">' +
-                         '<button class="playbutton" aria-label="Play / Stop Button"><i class="fa-solid fa-play fa-lg"></i></button>' +
-                      '</div>';
-    // Select the original div element
+    // Narrow the button panel to make room for the logo container, in place.
     let originalDiv = document.querySelector('.panel-10');
-    // Create a new div element
-    let buttonDiv = document.createElement('div');
-    buttonDiv.innerHTML = buttonHTML;
-    // Replace the original div element with the new HTML
     if (window.location.pathname !== '/setup') {
-        originalDiv.outerHTML = buttonDiv.outerHTML;
+        originalDiv.style.width = '88px';
+
+        // The button has no dedicated CSS of its own, it was always sized purely by
+        // filling its wrapper, so narrowing the wrapper alone squishes it out of square.
+        const playButtonEl = originalDiv.querySelector('.playbutton');
+        if (playButtonEl) {
+            playButtonEl.style.height = '100%';
+            playButtonEl.style.width = 'auto';
+            playButtonEl.style.aspectRatio = '1';
+        }
+
         document.getElementById('ps-container').style.padding = '12px';
         document.getElementById('station-logo').oncontextmenu = function(e) { e.preventDefault(); };
     }
