@@ -15,8 +15,8 @@ const INCLUDE_LOCAL_STATION_INFO = true;        // Set to false to disable displ
 const DELAY_LOCAL_STATION_INFO = true;          // Enable to instantly display local station info and disregard signal strength stabilising first
 const PRIORITISE_SVG = true;                    // Display 'svg' file if both 'svg' and 'webp' files exist for tuned station
 const PRIORITISE_SVG_LOCAL = false;             // Display 'svg' file if both 'svg' and 'png' files exist for tuned station (for stations without RDS)
-let LOGO_EFFECT = 'fade-animation';             // imageRotate, curtain, fade-animation, fade-grayscale
-let LOGO_TRANSITION_EFFECT = 'fade';            // none, flip, flip-vertical, fade, slide, zoom, blur
+const LOGO_EFFECT = 'fade-animation';           // imageRotate, curtain, fade-animation, fade-grayscale
+const LOGO_TRANSITION_EFFECT = 'fade';          // none, flip, flip-vertical, fade, slide, zoom, blur
 const SIGNAL_DIM_THRESHOLD = -103;              // Value in dBm
 const SIGNAL_HOLD_THRESHOLD = -101;             // Value in dBm
 const HIDE_STEREO_ICON_MOBILE = false;          // Could be useful if a Mono/Stereo/MPX lock is needed otherwise unlikely required
@@ -24,9 +24,9 @@ const DECEMBER_SANTA_HAT_LOGO = true;           // Santa hat as default logo dur
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Right-click (or long-press) the logo to override LOGO_EFFECT/LOGO_TRANSITION_EFFECT, saved to localStorage
-const DEFAULT_LOGO_EFFECT = LOGO_EFFECT;
-const DEFAULT_LOGO_TRANSITION_EFFECT = LOGO_TRANSITION_EFFECT;
+// Right-click (or long-press) the logo to override LOGO_EFFECT/LOGO_TRANSITION_EFFECT, saved to localStorage.
+let currentLogoEffect = LOGO_EFFECT;
+let currentLogoTransitionEffect = LOGO_TRANSITION_EFFECT;
 const LOGO_EFFECT_OPTIONS = ['imageRotate', 'curtain', 'fade-animation', 'fade-grayscale'];
 const LOGO_TRANSITION_EFFECT_OPTIONS = ['none', 'flip', 'flip-vertical', 'fade', 'slide', 'zoom', 'blur'];
 const LOGO_EFFECT_STORAGE_KEY = 'stationLogosOCE_logoEffect';
@@ -34,9 +34,9 @@ const LOGO_TRANSITION_EFFECT_STORAGE_KEY = 'stationLogosOCE_logoTransitionEffect
 
 {
     const savedLogoEffect = localStorage.getItem(LOGO_EFFECT_STORAGE_KEY);
-    if (savedLogoEffect && LOGO_EFFECT_OPTIONS.includes(savedLogoEffect)) LOGO_EFFECT = savedLogoEffect;
+    if (savedLogoEffect && LOGO_EFFECT_OPTIONS.includes(savedLogoEffect)) currentLogoEffect = savedLogoEffect;
     const savedTransitionEffect = localStorage.getItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY);
-    if (savedTransitionEffect && LOGO_TRANSITION_EFFECT_OPTIONS.includes(savedTransitionEffect)) LOGO_TRANSITION_EFFECT = savedTransitionEffect;
+    if (savedTransitionEffect && LOGO_TRANSITION_EFFECT_OPTIONS.includes(savedTransitionEffect)) currentLogoTransitionEffect = savedTransitionEffect;
 }
 
 const pluginVersion = '1.3.8';
@@ -531,24 +531,24 @@ function openLogoEffectsMenu(x, y) {
     `;
     document.body.appendChild(logoEffectsMenuEl);
 
-    const logoEffectDropdown = buildLogoEffectDropdown(LOGO_EFFECT_OPTIONS, LOGO_EFFECT, (value) => {
-        LOGO_EFFECT = value;
-        localStorage.setItem(LOGO_EFFECT_STORAGE_KEY, LOGO_EFFECT);
+    const logoEffectDropdown = buildLogoEffectDropdown(LOGO_EFFECT_OPTIONS, currentLogoEffect, (value) => {
+        currentLogoEffect = value;
+        localStorage.setItem(LOGO_EFFECT_STORAGE_KEY, currentLogoEffect);
     });
-    const transitionEffectDropdown = buildLogoEffectDropdown(LOGO_TRANSITION_EFFECT_OPTIONS, LOGO_TRANSITION_EFFECT, (value) => {
-        LOGO_TRANSITION_EFFECT = value;
-        localStorage.setItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY, LOGO_TRANSITION_EFFECT);
+    const transitionEffectDropdown = buildLogoEffectDropdown(LOGO_TRANSITION_EFFECT_OPTIONS, currentLogoTransitionEffect, (value) => {
+        currentLogoTransitionEffect = value;
+        localStorage.setItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY, currentLogoTransitionEffect);
     });
     logoEffectsMenuEl.querySelector('#logoEffectsMenu-logoEffectSlot').appendChild(logoEffectDropdown.el);
     logoEffectsMenuEl.querySelector('#logoEffectsMenu-transitionEffectSlot').appendChild(transitionEffectDropdown.el);
 
     logoEffectsMenuEl.querySelector('#logoEffectsMenu-defaultBtn').addEventListener('click', () => {
-        LOGO_EFFECT = DEFAULT_LOGO_EFFECT;
-        LOGO_TRANSITION_EFFECT = DEFAULT_LOGO_TRANSITION_EFFECT;
+        currentLogoEffect = LOGO_EFFECT;
+        currentLogoTransitionEffect = LOGO_TRANSITION_EFFECT;
         localStorage.removeItem(LOGO_EFFECT_STORAGE_KEY);
         localStorage.removeItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY);
-        logoEffectDropdown.setValue(LOGO_EFFECT);
-        transitionEffectDropdown.setValue(LOGO_TRANSITION_EFFECT);
+        logoEffectDropdown.setValue(currentLogoEffect);
+        transitionEffectDropdown.setValue(currentLogoTransitionEffect);
     });
 
     logoEffectsMenuEl.querySelector('#logoEffectsMenu-closeBtn').addEventListener('click', closeLogoEffectsMenu);
@@ -582,7 +582,7 @@ function transitionLogoChange(logoImage, newSrc, applyChanges) {
 
     if (el) logoTransitionState.set(el, { target: newSrc, settled: false });
 
-    (LOGO_TRANSITIONS[LOGO_TRANSITION_EFFECT] || LOGO_TRANSITIONS.none)(logoImage, () => {
+    (LOGO_TRANSITIONS[currentLogoTransitionEffect] || LOGO_TRANSITIONS.none)(logoImage, () => {
         applyChanges();
         if (el) {
             const s = logoTransitionState.get(el);
@@ -967,16 +967,17 @@ function CheckPIorFreq() {
                 img.classList.add('logoFull');
                 const elapsed = Date.now() - logoRotateStartTime;
                 if (elapsed >= LOGO_EFFECT_START_DELAY && elapsed < LOGO_EFFECT_START_DELAY + LOGO_EFFECT_DURATION && !isLogoTransitioning(img)) {
-                    img.classList.add(LOGO_EFFECT);
+                    img.classList.remove(...LOGO_EFFECT_OPTIONS.filter((opt) => opt !== currentLogoEffect));
+                    img.classList.add(currentLogoEffect);
                 } else {
-                    img.classList.remove(LOGO_EFFECT);
+                    img.classList.remove(...LOGO_EFFECT_OPTIONS);
                 }
             } else {
-                img.classList.remove(LOGO_EFFECT);
+                img.classList.remove(...LOGO_EFFECT_OPTIONS);
                 img.classList.add('logoFull');
             }
         } else {
-            img.classList.remove('logoFull', LOGO_EFFECT);
+            img.classList.remove('logoFull', ...LOGO_EFFECT_OPTIONS);
             img.classList.add('logoDim');
         }
     }
