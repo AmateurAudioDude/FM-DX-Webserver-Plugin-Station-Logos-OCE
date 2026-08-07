@@ -148,6 +148,10 @@ document.head.appendChild(Object.assign(document.createElement('style'), {
         box-shadow: 0 6px 18px rgba(0,0,0,0.35);
         z-index: 100;
         font-size: 13px;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
     }
     .logo-effects-menu h3 {
         margin: 0 0 10px 0;
@@ -303,7 +307,7 @@ if (window.location.pathname !== '/setup') {
       logoImage.id = 'station-logo-phone';
       logoImage.src = defaultImagePath;  // Make sure defaultImagePath is defined
       logoImage.alt = 'station-logo-phone';
-      logoImage.style.cssText = 'max-width: 160px; padding: 1px 2px; max-height: 100%; border-radius: 8px; display: block; image-rendering: auto;';
+      logoImage.style.cssText = 'max-width: 160px; padding: 1px 2px; max-height: 100%; border-radius: 8px; display: block; image-rendering: auto; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;';
 
       // Long-press opens the logo effects menu (mirrors AudioSettings' play-button long-press)
       let logoHoldTimer = null;
