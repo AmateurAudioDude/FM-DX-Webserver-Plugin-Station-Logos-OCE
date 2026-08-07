@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.3.8 by AAD
+    Station Logos OCE + Station Info for no RDS v1.3.9 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -16,6 +16,7 @@ const DELAY_LOCAL_STATION_INFO = true;          // Enable to instantly display l
 const PRIORITISE_SVG = true;                    // Display 'svg' file if both 'svg' and 'webp' files exist for tuned station
 const PRIORITISE_SVG_LOCAL = false;             // Display 'svg' file if both 'svg' and 'png' files exist for tuned station (for stations without RDS)
 const LOGO_EFFECT = 'fade-animation';           // imageRotate, curtain, fade-animation, fade-grayscale
+const LOGO_TRANSITION_EFFECT = 'fade';          // none, flip, flip-vertical, fade, slide, zoom, blur
 const SIGNAL_DIM_THRESHOLD = -103;              // Value in dBm
 const SIGNAL_HOLD_THRESHOLD = -101;             // Value in dBm
 const HIDE_STEREO_ICON_MOBILE = false;          // Could be useful if a Mono/Stereo/MPX lock is needed otherwise unlikely required
@@ -202,6 +203,106 @@ if (window.location.pathname !== '/setup') {
 const localpath = `${logosPath}/`;      // Path to local logo images
 const LOGO_EFFECT_START_DELAY = 2000;   // ms before animation begins
 const LOGO_EFFECT_DURATION = 120000;    // ms animation duration
+const LOGO_TRANSITION_DURATION = 200;   // ms per phase of LOGO_TRANSITION_EFFECT
+
+// Effect played whenever the logo image's src actually changes.
+const LOGO_TRANSITIONS = {
+    none(logoImage, applyChanges) {
+        applyChanges();
+    },
+    flip(logoImage, applyChanges) {
+        logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'rotateY(90deg)' });
+        setTimeout(() => {
+            applyChanges();
+            logoImage.css({ transition: 'none', transform: 'rotateY(-90deg)' });
+            setTimeout(() => {
+                logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'rotateY(0deg)' });
+            }, 30);
+        }, LOGO_TRANSITION_DURATION);
+    },
+    'flip-vertical'(logoImage, applyChanges) {
+        logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'rotateX(90deg)' });
+        setTimeout(() => {
+            applyChanges();
+            logoImage.css({ transition: 'none', transform: 'rotateX(-90deg)' });
+            setTimeout(() => {
+                logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'rotateX(0deg)' });
+            }, 30);
+        }, LOGO_TRANSITION_DURATION);
+    },
+    fade(logoImage, applyChanges) {
+        logoImage.css({ transition: `opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, opacity: 0 });
+        setTimeout(() => {
+            applyChanges();
+            logoImage.css({ transition: `opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, opacity: 1 });
+        }, LOGO_TRANSITION_DURATION);
+    },
+    slide(logoImage, applyChanges) {
+        logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in, opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'translateX(-24px)', opacity: 0 });
+        setTimeout(() => {
+            applyChanges();
+            logoImage.css({ transition: 'none', transform: 'translateX(24px)' });
+            setTimeout(() => {
+                logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out, opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'translateX(0)', opacity: 1 });
+            }, 30);
+        }, LOGO_TRANSITION_DURATION);
+    },
+    zoom(logoImage, applyChanges) {
+        logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in, opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'scale(0)', opacity: 0 });
+        setTimeout(() => {
+            applyChanges();
+            logoImage.css({ transition: 'none', transform: 'scale(0)' });
+            setTimeout(() => {
+                logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out, opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'scale(1)', opacity: 1 });
+            }, 30);
+        }, LOGO_TRANSITION_DURATION);
+    },
+    blur(logoImage, applyChanges) {
+        logoImage.css({ transition: `filter ${LOGO_TRANSITION_DURATION}ms ease-in, opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, filter: 'blur(10px)', opacity: 0.3 });
+        setTimeout(() => {
+            applyChanges();
+            logoImage.css({ transition: `filter ${LOGO_TRANSITION_DURATION}ms ease-out, opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, filter: 'blur(0px)', opacity: 1 });
+        }, LOGO_TRANSITION_DURATION);
+    }
+};
+
+// Tracks each image's intended src and whether that src has actually been painted yet, since the
+// animated transitions apply it after a delay.
+const logoTransitionState = new WeakMap();
+
+// LOGO_EFFECT is a looping CSS animation on opacity/transform.
+function isLogoTransitioning(el) {
+    const state = logoTransitionState.get(el);
+    return !!(state && !state.settled);
+}
+
+function transitionLogoChange(logoImage, newSrc, applyChanges) {
+    const el = logoImage[0];
+    const state = el ? logoTransitionState.get(el) : null;
+
+    if (state && state.target === newSrc) {
+        if (state.settled) applyChanges(); // already showing this, reapply alt/css/class, skip the animation
+        return; // otherwise a transition to this same src is already in flight, let it finish
+    }
+
+    if (!state && el && el.getAttribute('src') === newSrc) {
+        // No transition has run on this element yet, but it already shows the target src.
+        applyChanges();
+        logoTransitionState.set(el, { target: newSrc, settled: true });
+        return;
+    }
+
+    if (el) logoTransitionState.set(el, { target: newSrc, settled: false });
+
+    (LOGO_TRANSITIONS[LOGO_TRANSITION_EFFECT] || LOGO_TRANSITIONS.none)(logoImage, () => {
+        applyChanges();
+        if (el) {
+            const s = logoTransitionState.get(el);
+            if (s && s.target === newSrc) s.settled = true;
+        }
+    });
+}
+
 let freqData, logoImage, logoLocal, mobileRefresh, mobileRefreshNew;
 let intervalDividerPrimary = 5;
 let intervalDividerSecondary = 1.25;
@@ -577,7 +678,7 @@ function CheckPIorFreq() {
             if (logoRotate) {
                 img.classList.add('logoFull');
                 const elapsed = Date.now() - logoRotateStartTime;
-                if (elapsed >= LOGO_EFFECT_START_DELAY && elapsed < LOGO_EFFECT_START_DELAY + LOGO_EFFECT_DURATION) {
+                if (elapsed >= LOGO_EFFECT_START_DELAY && elapsed < LOGO_EFFECT_START_DELAY + LOGO_EFFECT_DURATION && !isLogoTransitioning(img)) {
                     img.classList.add(LOGO_EFFECT);
                 } else {
                     img.classList.remove(LOGO_EFFECT);
@@ -595,7 +696,7 @@ function CheckPIorFreq() {
 	// Check if confirmed PI code exists
 	if (freqData) {
 		if (freqData !== previousfreqData) { // Default logo on frequency change
-			logoImage.attr('src', defaultImagePath).attr('alt', 'Default logo');
+			transitionLogoChange(logoImage, defaultImagePath, () => logoImage.attr('src', defaultImagePath).attr('alt', 'Default logo'));
 			logoRotate = true;
 			signalHold = 0; // Reset displaying local station info unless the signal is strong enough
 		}
@@ -610,7 +711,7 @@ function CheckPIorFreq() {
             }
 			logoPIPSVisible = false;
 		} else { // Default logo
-			logoImage.attr('src', defaultImagePath).attr('alt', 'Default logo');
+			transitionLogoChange(logoImage, defaultImagePath, () => logoImage.attr('src', defaultImagePath).attr('alt', 'Default logo'));
 			logoRotate = false;
 			window.piCode = '';
 			window.psCode = '';
@@ -685,11 +786,11 @@ function updateStationLogo(piCode, psCode) {
                     let correctFilename = data.availableLogos.find(file => file.toLowerCase() === matchingLogo.split('/').pop().toLowerCase());
 
                     if (correctFilename) {
-                        logoImage.attr('src', `${logosPath}/${correctFilename}`) // Use the correct case-sensitive filename
+                        transitionLogoChange(logoImage, `${logosPath}/${correctFilename}`, () => logoImage.attr('src', `${logosPath}/${correctFilename}`) // Use the correct case-sensitive filename
                             .attr('alt', `Logo for ${psCode.replace(/_/g, ' ')}`)
                             .css('display', 'block')
                             .css('image-rendering', 'auto')
-                            .attr('class', '');
+                            .attr('class', ''));
                         logoPIPSVisible = true;
                         found = true;
                         logoRotate = false;
@@ -705,8 +806,8 @@ function updateStationLogo(piCode, psCode) {
 
         // Rotating logo during PS loading
         if (!found && !logoRotate && !logoPIPSVisible) {
-            logoImage.attr('src', defaultImagePath)
-                .attr('alt', 'Empty logo');
+            transitionLogoChange(logoImage, defaultImagePath, () => logoImage.attr('src', defaultImagePath)
+                .attr('alt', 'Empty logo'));
             logoRotate = true;
         }
     }
@@ -805,7 +906,7 @@ function updateLocalStationInfo() {
                     url: `${path}.${supportedExtensions[extensionIndex]}`,
                     method: 'HEAD',
                     success: function () {
-                        logoImage.attr('src', `${path}.${supportedExtensions[extensionIndex]}`).attr('alt', `Logo for ${freqData} FM`).css('display', 'block').css('image-rendering', 'auto').attr('class', '');
+                        transitionLogoChange(logoImage, `${path}.${supportedExtensions[extensionIndex]}`, () => logoImage.attr('src', `${path}.${supportedExtensions[extensionIndex]}`).attr('alt', `Logo for ${freqData} FM`).css('display', 'block').css('image-rendering', 'auto').attr('class', ''));
                         foundLocal = true;
                         logoRotate = false;
                     },
