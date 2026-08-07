@@ -15,14 +15,29 @@ const INCLUDE_LOCAL_STATION_INFO = true;        // Set to false to disable displ
 const DELAY_LOCAL_STATION_INFO = true;          // Enable to instantly display local station info and disregard signal strength stabilising first
 const PRIORITISE_SVG = true;                    // Display 'svg' file if both 'svg' and 'webp' files exist for tuned station
 const PRIORITISE_SVG_LOCAL = false;             // Display 'svg' file if both 'svg' and 'png' files exist for tuned station (for stations without RDS)
-const LOGO_EFFECT = 'fade-animation';           // imageRotate, curtain, fade-animation, fade-grayscale
-const LOGO_TRANSITION_EFFECT = 'fade';          // none, flip, flip-vertical, fade, slide, zoom, blur
+let LOGO_EFFECT = 'fade-animation';             // imageRotate, curtain, fade-animation, fade-grayscale
+let LOGO_TRANSITION_EFFECT = 'fade';            // none, flip, flip-vertical, fade, slide, zoom, blur
 const SIGNAL_DIM_THRESHOLD = -103;              // Value in dBm
 const SIGNAL_HOLD_THRESHOLD = -101;             // Value in dBm
 const HIDE_STEREO_ICON_MOBILE = false;          // Could be useful if a Mono/Stereo/MPX lock is needed otherwise unlikely required
 const DECEMBER_SANTA_HAT_LOGO = true;           // Santa hat as default logo during December
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Right-click (or long-press) the logo to override LOGO_EFFECT/LOGO_TRANSITION_EFFECT, saved to localStorage
+const DEFAULT_LOGO_EFFECT = LOGO_EFFECT;
+const DEFAULT_LOGO_TRANSITION_EFFECT = LOGO_TRANSITION_EFFECT;
+const LOGO_EFFECT_OPTIONS = ['imageRotate', 'curtain', 'fade-animation', 'fade-grayscale'];
+const LOGO_TRANSITION_EFFECT_OPTIONS = ['none', 'flip', 'flip-vertical', 'fade', 'slide', 'zoom', 'blur'];
+const LOGO_EFFECT_STORAGE_KEY = 'stationLogosOCE_logoEffect';
+const LOGO_TRANSITION_EFFECT_STORAGE_KEY = 'stationLogosOCE_logoTransitionEffect';
+
+{
+    const savedLogoEffect = localStorage.getItem(LOGO_EFFECT_STORAGE_KEY);
+    if (savedLogoEffect && LOGO_EFFECT_OPTIONS.includes(savedLogoEffect)) LOGO_EFFECT = savedLogoEffect;
+    const savedTransitionEffect = localStorage.getItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY);
+    if (savedTransitionEffect && LOGO_TRANSITION_EFFECT_OPTIONS.includes(savedTransitionEffect)) LOGO_TRANSITION_EFFECT = savedTransitionEffect;
+}
 
 const pluginVersion = '1.3.8';
 const pluginName = "Station Logos OCE";
@@ -121,6 +136,98 @@ document.head.appendChild(Object.assign(document.createElement('style'), {
       }
     }
     ` : ''}
+
+    .logo-effects-menu {
+        position: fixed;
+        width: 220px;
+        background: var(--color-1);
+        color: var(--color-text);
+        border: 1px solid var(--color-2);
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        z-index: 100;
+        font-size: 13px;
+    }
+    .logo-effects-menu h3 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+    }
+    .logo-effects-row {
+        display: block;
+        margin-bottom: 4px;
+    }
+    .logo-effects-dropdown {
+        position: relative;
+        margin-bottom: 10px;
+    }
+    .logo-effects-dropdown-trigger {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--color-2);
+        color: var(--color-text);
+        border: none;
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 13px;
+        text-align: left;
+    }
+    .logo-effects-dropdown-trigger:hover {
+        background: var(--color-3);
+    }
+    .logo-effects-dropdown-arrow {
+        opacity: 0.7;
+        margin-left: 8px;
+    }
+    .logo-effects-dropdown-list {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        margin-top: 4px;
+        background: var(--color-1);
+        border: 1px solid var(--color-2);
+        border-radius: 6px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        z-index: 101;
+        max-height: 220px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+    .logo-effects-dropdown-option {
+        padding: 4px 10px;
+        cursor: pointer;
+    }
+    .logo-effects-dropdown-option.selected {
+        background: var(--color-2);
+        font-weight: bold;
+    }
+    .logo-effects-dropdown-option:hover {
+        background: var(--color-3);
+    }
+    .logo-effects-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 4px;
+    }
+    .logo-effects-buttons button {
+        background: var(--color-2);
+        color: var(--color-text);
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+    }
+    .logo-effects-buttons button:hover {
+        filter: brightness(120%);
+    }
+    .logo-effects-buttons button:active {
+        filter: brightness(140%);
+    }
   `
 }));
 
@@ -176,7 +283,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         document.getElementById('ps-container').style.padding = '12px';
-        document.getElementById('station-logo').oncontextmenu = function(e) { e.preventDefault(); };
+        document.getElementById('station-logo').oncontextmenu = function(e) {
+            e.preventDefault();
+            openLogoEffectsMenu(e.clientX, e.clientY);
+        };
     }
 });
 
@@ -194,6 +304,42 @@ if (window.location.pathname !== '/setup') {
       logoImage.src = defaultImagePath;  // Make sure defaultImagePath is defined
       logoImage.alt = 'station-logo-phone';
       logoImage.style.cssText = 'max-width: 160px; padding: 1px 2px; max-height: 100%; border-radius: 8px; display: block; image-rendering: auto;';
+
+      // Long-press opens the logo effects menu (mirrors AudioSettings' play-button long-press)
+      let logoHoldTimer = null;
+      let logoLongPressFired = false;
+      let logoTouchStartX = 0, logoTouchStartY = 0;
+      const LOGO_HOLD_MS = 500;
+      const LOGO_MOVE_CANCEL_PX = 12;
+
+      logoImage.addEventListener('touchstart', (e) => {
+          logoLongPressFired = false;
+          const touch = e.touches[0];
+          logoTouchStartX = touch.clientX;
+          logoTouchStartY = touch.clientY;
+          logoHoldTimer = setTimeout(() => {
+              logoHoldTimer = null;
+              logoLongPressFired = true;
+              openLogoEffectsMenu(touch.clientX, touch.clientY);
+          }, LOGO_HOLD_MS);
+      });
+      logoImage.addEventListener('touchmove', (e) => {
+          if (!logoHoldTimer) return;
+          const touch = e.touches[0];
+          const dx = touch.clientX - logoTouchStartX;
+          const dy = touch.clientY - logoTouchStartY;
+          if (Math.sqrt(dx * dx + dy * dy) > LOGO_MOVE_CANCEL_PX) {
+              clearTimeout(logoHoldTimer);
+              logoHoldTimer = null;
+          }
+      });
+      logoImage.addEventListener('touchend', (e) => {
+          if (logoHoldTimer) { clearTimeout(logoHoldTimer); logoHoldTimer = null; }
+          if (logoLongPressFired) e.preventDefault(); // suppress the synthetic click a tap would otherwise still fire
+      });
+      logoImage.addEventListener('touchcancel', () => {
+          if (logoHoldTimer) { clearTimeout(logoHoldTimer); logoHoldTimer = null; }
+      });
 
       logoContainer.appendChild(logoImage);
       container.prepend(logoContainer);  // Insert at top
@@ -274,6 +420,148 @@ const logoTransitionState = new WeakMap();
 function isLogoTransitioning(el) {
     const state = logoTransitionState.get(el);
     return !!(state && !state.settled);
+}
+
+// Right-click / long-press menu: override LOGO_EFFECT / LOGO_TRANSITION_EFFECT
+let logoEffectsMenuEl = null;
+
+// Only one custom dropdown list open at a time
+let openLogoEffectDropdownClose = null;
+
+function closeLogoEffectsMenu() {
+    if (logoEffectsMenuEl) {
+        logoEffectsMenuEl.remove();
+        logoEffectsMenuEl = null;
+    }
+    openLogoEffectDropdownClose = null;
+    document.removeEventListener('click', onLogoEffectsMenuOutsideClick);
+}
+
+function onLogoEffectsMenuOutsideClick(e) {
+    if (logoEffectsMenuEl && !logoEffectsMenuEl.contains(e.target)) {
+        closeLogoEffectsMenu();
+    }
+}
+
+function formatEffectLabel(value) {
+    return value
+        .replace(/-/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .split(' ')
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
+// Custom dropdown.
+function buildLogoEffectDropdown(options, currentValue, onSelect) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'logo-effects-dropdown';
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'logo-effects-dropdown-trigger';
+    const label = document.createElement('span');
+    const arrow = document.createElement('span');
+    arrow.className = 'logo-effects-dropdown-arrow';
+    arrow.textContent = String.fromCharCode(0x25BE);
+    trigger.appendChild(label);
+    trigger.appendChild(arrow);
+
+    const list = document.createElement('div');
+    list.className = 'logo-effects-dropdown-list';
+    list.hidden = true;
+
+    function render(selectedValue) {
+        label.textContent = formatEffectLabel(selectedValue);
+        list.querySelectorAll('.logo-effects-dropdown-option').forEach((el) => {
+            el.classList.toggle('selected', el.dataset.value === selectedValue);
+        });
+    }
+
+    options.forEach((opt) => {
+        const optionEl = document.createElement('div');
+        optionEl.className = 'logo-effects-dropdown-option';
+        optionEl.textContent = formatEffectLabel(opt);
+        optionEl.dataset.value = opt;
+        optionEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeList();
+            render(opt);
+            onSelect(opt);
+        });
+        list.appendChild(optionEl);
+    });
+
+    function closeList() {
+        list.hidden = true;
+        if (openLogoEffectDropdownClose === closeList) openLogoEffectDropdownClose = null;
+    }
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!list.hidden) { closeList(); return; }
+        if (openLogoEffectDropdownClose) openLogoEffectDropdownClose();
+        list.hidden = false;
+        openLogoEffectDropdownClose = closeList;
+    });
+
+    render(currentValue);
+    wrapper.appendChild(trigger);
+    wrapper.appendChild(list);
+
+    return { el: wrapper, setValue: render };
+}
+
+function openLogoEffectsMenu(x, y) {
+    closeLogoEffectsMenu();
+
+    logoEffectsMenuEl = document.createElement('div');
+    logoEffectsMenuEl.className = 'logo-effects-menu';
+    logoEffectsMenuEl.innerHTML = `
+        <h3>Logo Effects</h3>
+        <div class="logo-effects-row">Placeholder Animation</div>
+        <div class="logo-effects-row" id="logoEffectsMenu-logoEffectSlot"></div>
+        <div class="logo-effects-row" style="margin-top: 14px">Change Transition</div>
+        <div class="logo-effects-row" id="logoEffectsMenu-transitionEffectSlot"></div>
+        <div class="logo-effects-buttons">
+            <button type="button" id="logoEffectsMenu-defaultBtn">Default</button>
+            <button type="button" id="logoEffectsMenu-closeBtn">Close</button>
+        </div>
+    `;
+    document.body.appendChild(logoEffectsMenuEl);
+
+    const logoEffectDropdown = buildLogoEffectDropdown(LOGO_EFFECT_OPTIONS, LOGO_EFFECT, (value) => {
+        LOGO_EFFECT = value;
+        localStorage.setItem(LOGO_EFFECT_STORAGE_KEY, LOGO_EFFECT);
+    });
+    const transitionEffectDropdown = buildLogoEffectDropdown(LOGO_TRANSITION_EFFECT_OPTIONS, LOGO_TRANSITION_EFFECT, (value) => {
+        LOGO_TRANSITION_EFFECT = value;
+        localStorage.setItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY, LOGO_TRANSITION_EFFECT);
+    });
+    logoEffectsMenuEl.querySelector('#logoEffectsMenu-logoEffectSlot').appendChild(logoEffectDropdown.el);
+    logoEffectsMenuEl.querySelector('#logoEffectsMenu-transitionEffectSlot').appendChild(transitionEffectDropdown.el);
+
+    logoEffectsMenuEl.querySelector('#logoEffectsMenu-defaultBtn').addEventListener('click', () => {
+        LOGO_EFFECT = DEFAULT_LOGO_EFFECT;
+        LOGO_TRANSITION_EFFECT = DEFAULT_LOGO_TRANSITION_EFFECT;
+        localStorage.removeItem(LOGO_EFFECT_STORAGE_KEY);
+        localStorage.removeItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY);
+        logoEffectDropdown.setValue(LOGO_EFFECT);
+        transitionEffectDropdown.setValue(LOGO_TRANSITION_EFFECT);
+    });
+
+    logoEffectsMenuEl.querySelector('#logoEffectsMenu-closeBtn').addEventListener('click', closeLogoEffectsMenu);
+
+    // Appears at the pointer, only nudged back onscreen if it would otherwise spill past the edge
+    const menuWidth = logoEffectsMenuEl.offsetWidth || 220;
+    const menuHeight = logoEffectsMenuEl.offsetHeight || 160;
+    logoEffectsMenuEl.style.left = `${Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8))}px`;
+    logoEffectsMenuEl.style.top = `${Math.max(8, Math.min(y, window.innerHeight - menuHeight - 8))}px`;
+
+    setTimeout(() => {
+        document.addEventListener('click', onLogoEffectsMenuOutsideClick);
+    }, 0);
 }
 
 function transitionLogoChange(logoImage, newSrc, applyChanges) {
