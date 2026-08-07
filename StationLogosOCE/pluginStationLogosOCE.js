@@ -39,7 +39,7 @@ const LOGO_TRANSITION_EFFECT_STORAGE_KEY = 'stationLogosOCE_logoTransitionEffect
     if (savedTransitionEffect && LOGO_TRANSITION_EFFECT_OPTIONS.includes(savedTransitionEffect)) currentLogoTransitionEffect = savedTransitionEffect;
 }
 
-const pluginVersion = '1.3.8';
+const pluginVersion = '1.3.9';
 const pluginName = "Station Logos OCE";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
