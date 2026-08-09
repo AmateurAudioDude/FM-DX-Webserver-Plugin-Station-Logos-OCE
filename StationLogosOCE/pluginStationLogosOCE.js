@@ -24,6 +24,17 @@ const DECEMBER_SANTA_HAT_LOGO = true;           // Santa hat as default logo dur
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+const pluginVersion = '1.3.9';
+const pluginName = "Station Logos OCE";
+const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
+const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
+const pluginSetupOnlyNotify = true;
+const CHECK_FOR_UPDATES = true;
+
+const basePath = window.location.pathname.replace(/\/?$/, '/');
+const logosPath = `${basePath}logos`.replace(/\/+/g, '/');          // /logos
+const apiPath = `${basePath}logos-data`.replace(/\/+/g, '/');       // /logos-data
+
 // Right-click (or long-press) the logo to override LOGO_EFFECT/LOGO_TRANSITION_EFFECT, saved to localStorage.
 let currentLogoEffect = LOGO_EFFECT;
 let currentLogoTransitionEffect = LOGO_TRANSITION_EFFECT;
@@ -38,17 +49,6 @@ const LOGO_TRANSITION_EFFECT_STORAGE_KEY = 'stationLogosOCE_logoTransitionEffect
     const savedTransitionEffect = localStorage.getItem(LOGO_TRANSITION_EFFECT_STORAGE_KEY);
     if (savedTransitionEffect && LOGO_TRANSITION_EFFECT_OPTIONS.includes(savedTransitionEffect)) currentLogoTransitionEffect = savedTransitionEffect;
 }
-
-const pluginVersion = '1.3.9';
-const pluginName = "Station Logos OCE";
-const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
-const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
-const pluginSetupOnlyNotify = true;
-const CHECK_FOR_UPDATES = true;
-
-const basePath = window.location.pathname.replace(/\/?$/, '/');
-const logosPath = `${basePath}logos`.replace(/\/+/g, '/');          // /logos
-const apiPath = `${basePath}logos-data`.replace(/\/+/g, '/');       // /logos-data
 
 // Declare stationData
 let stationData = {};
