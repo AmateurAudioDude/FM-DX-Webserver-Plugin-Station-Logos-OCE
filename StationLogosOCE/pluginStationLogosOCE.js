@@ -156,10 +156,15 @@ document.head.appendChild(Object.assign(document.createElement('style'), {
     .logo-effects-menu h3 {
         margin: 0 0 10px 0;
         font-size: 14px;
+        text-transform: uppercase;
     }
     .logo-effects-row {
         display: block;
         margin-bottom: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: var(--color-4);
     }
     .logo-effects-dropdown {
         position: relative;
@@ -202,8 +207,11 @@ document.head.appendChild(Object.assign(document.createElement('style'), {
         scrollbar-width: thin;
     }
     .logo-effects-dropdown-option {
-        padding: 4px 10px;
+        padding: 6px 10px;
         cursor: pointer;
+        text-transform: none;
+        color: var(--color-text);
+        font-weight: normal;
     }
     .logo-effects-dropdown-option.selected {
         background: var(--color-2);
@@ -442,6 +450,9 @@ function closeLogoEffectsMenu() {
 }
 
 function onLogoEffectsMenuOutsideClick(e) {
+    // Trigger/option clicks call stopPropagation, so anything reaching here.
+    if (openLogoEffectDropdownClose) openLogoEffectDropdownClose();
+
     if (logoEffectsMenuEl && !logoEffectsMenuEl.contains(e.target)) {
         closeLogoEffectsMenu();
     }
