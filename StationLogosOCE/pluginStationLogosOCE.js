@@ -1,5 +1,5 @@
 /*
-    Station Logos OCE + Station Info for no RDS v1.4.0 by AAD
+    Station Logos OCE + Station Info for no RDS v1.4.1 by AAD
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE
 
     https://github.com/Highpoint2000/webserver-station-logos
@@ -26,7 +26,7 @@ const DECEMBER_SANTA_HAT_LOGO = true;           // Santa hat as default logo dur
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const pluginVersion = '1.4.0';
+const pluginVersion = '1.4.1';
 const pluginName = "Station Logos OCE";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/refs/heads/main/StationLogosOCE/pluginStationLogosOCE.js";
@@ -49,7 +49,7 @@ let signalHoldMax = 10 * ((intervalDividerPrimary / intervalDividerSecondary) / 
 let signalHold = 0; // seconds
 let signalDimMax = 30 * ((intervalDividerPrimary / intervalDividerSecondary) / 1.6666); // seconds
 let signalDim = signalDimMax; // seconds
-let cciValue = 100;
+let cciValue = 99;
 let localStationDelayCounterMax = DELAY_LOCAL_STATION_INFO ? 8 : 0;
 let localStationDelayCounter = 0;
 let setIntervalMain;
@@ -60,6 +60,7 @@ let lastLocalAntenna = 0;
 let logoLocalAntenna = null; // Antenna the currently displayed local logo belongs to
 let isLocalActive = false;
 let logoRotateStartTime = 0;
+let logoLookupsInFlight = 0; // Logo list requests still waiting for the server
 let cciError = false;
 let debug = false;
 
@@ -390,67 +391,92 @@ const localpath = `${logosPath}/`;      // Path to local logo images
 const LOGO_EFFECT_START_DELAY = 2000;   // ms before animation begins
 const LOGO_EFFECT_DURATION = 120000;    // ms animation duration
 const LOGO_TRANSITION_DURATION = 200;   // ms per phase of LOGO_TRANSITION_EFFECT
+const LOGO_LOAD_TIMEOUT = 10000;        // ms to wait for a logo to load before transitioning anyway
 
-// Effect played whenever the logo image's src actually changes.
+// Effect played whenever the logo image's src actually changes. swap() applies the new src and calls back
+// once it has loaded, so the second half of an effect never shows the previous image.
 const LOGO_TRANSITIONS = {
-    none(logoImage, applyChanges) {
-        applyChanges();
+    none(logoImage, swap) {
+        swap(() => {});
     },
-    flip(logoImage, applyChanges) {
+    flip(logoImage, swap) {
         logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'rotateY(90deg)' });
-        setTimeout(() => {
-            applyChanges();
+        setTimeout(() => swap(() => {
             logoImage.css({ transition: 'none', transform: 'rotateY(-90deg)' });
             setTimeout(() => {
                 logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'rotateY(0deg)' });
             }, 30);
-        }, LOGO_TRANSITION_DURATION);
+        }), LOGO_TRANSITION_DURATION);
     },
-    'flip-vertical'(logoImage, applyChanges) {
+    'flip-vertical'(logoImage, swap) {
         logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'rotateX(90deg)' });
-        setTimeout(() => {
-            applyChanges();
+        setTimeout(() => swap(() => {
             logoImage.css({ transition: 'none', transform: 'rotateX(-90deg)' });
             setTimeout(() => {
                 logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'rotateX(0deg)' });
             }, 30);
-        }, LOGO_TRANSITION_DURATION);
+        }), LOGO_TRANSITION_DURATION);
     },
-    fade(logoImage, applyChanges) {
+    fade(logoImage, swap) {
         logoImage.css({ transition: `opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, opacity: 0 });
-        setTimeout(() => {
-            applyChanges();
+        setTimeout(() => swap(() => {
             logoImage.css({ transition: `opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, opacity: 1 });
-        }, LOGO_TRANSITION_DURATION);
+        }), LOGO_TRANSITION_DURATION);
     },
-    slide(logoImage, applyChanges) {
+    slide(logoImage, swap) {
         logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in, opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'translateX(-24px)', opacity: 0 });
-        setTimeout(() => {
-            applyChanges();
+        setTimeout(() => swap(() => {
             logoImage.css({ transition: 'none', transform: 'translateX(24px)' });
             setTimeout(() => {
                 logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out, opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'translateX(0)', opacity: 1 });
             }, 30);
-        }, LOGO_TRANSITION_DURATION);
+        }), LOGO_TRANSITION_DURATION);
     },
-    zoom(logoImage, applyChanges) {
+    zoom(logoImage, swap) {
         logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-in, opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, transform: 'scale(0)', opacity: 0 });
-        setTimeout(() => {
-            applyChanges();
+        setTimeout(() => swap(() => {
             logoImage.css({ transition: 'none', transform: 'scale(0)' });
             setTimeout(() => {
                 logoImage.css({ transition: `transform ${LOGO_TRANSITION_DURATION}ms ease-out, opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, transform: 'scale(1)', opacity: 1 });
             }, 30);
-        }, LOGO_TRANSITION_DURATION);
+        }), LOGO_TRANSITION_DURATION);
     },
-    blur(logoImage, applyChanges) {
+    blur(logoImage, swap) {
         logoImage.css({ transition: `filter ${LOGO_TRANSITION_DURATION}ms ease-in, opacity ${LOGO_TRANSITION_DURATION}ms ease-in`, filter: 'blur(10px)', opacity: 0.3 });
-        setTimeout(() => {
-            applyChanges();
+        setTimeout(() => swap(() => {
             logoImage.css({ transition: `filter ${LOGO_TRANSITION_DURATION}ms ease-out, opacity ${LOGO_TRANSITION_DURATION}ms ease-out`, filter: 'blur(0px)', opacity: 1 });
-        }, LOGO_TRANSITION_DURATION);
+        }), LOGO_TRANSITION_DURATION);
     }
 };
+
+// Keeps preloading images referenced until they finish
+const pendingLogoPreloads = new Set();
+
+function whenLogoLoaded(img, done) {
+    let finished = false;
+    const finish = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        img.removeEventListener('load', finish);
+        img.removeEventListener('error', finish);
+        done();
+    };
+    const timer = setTimeout(finish, LOGO_LOAD_TIMEOUT);
+    img.addEventListener('load', finish);
+    img.addEventListener('error', finish);
+    if (img.complete) finish();
+}
+
+function preloadLogo(src, done) {
+    const img = new Image();
+    pendingLogoPreloads.add(img);
+    img.src = src;
+    whenLogoLoaded(img, () => {
+        pendingLogoPreloads.delete(img);
+        done();
+    });
+}
 
 // Tracks each image's intended src and whether that src has actually been painted yet, since the
 // animated transitions apply it after a delay.
@@ -624,13 +650,25 @@ function transitionLogoChange(logoImage, newSrc, applyChanges) {
     }
 
     if (el) logoTransitionState.set(el, { target: newSrc, settled: false });
+    const isCurrentTarget = () => !el || logoTransitionState.get(el)?.target === newSrc;
 
-    (LOGO_TRANSITIONS[currentLogoTransitionEffect] || LOGO_TRANSITIONS.none)(logoImage, () => {
-        applyChanges();
-        if (el) {
-            const s = logoTransitionState.get(el);
-            if (s && s.target === newSrc) s.settled = true;
-        }
+    // The previous logo stays visible while the new one downloads, a newer target supersedes this one
+    preloadLogo(newSrc, () => {
+        if (!isCurrentTarget()) return;
+        (LOGO_TRANSITIONS[currentLogoTransitionEffect] || LOGO_TRANSITIONS.none)(logoImage, (showNew) => {
+            if (!isCurrentTarget()) {
+                showNew();
+                return;
+            }
+            applyChanges();
+            const settle = () => {
+                const s = el ? logoTransitionState.get(el) : null;
+                if (s && s.target === newSrc) s.settled = true;
+                showNew();
+            };
+            if (el) whenLogoLoaded(el, settle);
+            else settle();
+        });
     });
 }
 
@@ -665,7 +703,6 @@ function tryUpdateLocalInfoFromAntennaChange() {
 document.addEventListener("DOMContentLoaded", function() {
     function setupAntennaObserver() {
         const dataAntContainer = document.querySelector('.data-ant');
-        if (!dataAntContainer) return;
 
         let antennaUpdateTimeout = null;
 
@@ -679,7 +716,8 @@ document.addEventListener("DOMContentLoaded", function() {
             }, 1000);
         });
 
-        observer.observe(dataAntContainer, {
+        // Without an antenna switch only the CCI listener below is needed
+        if (dataAntContainer) observer.observe(dataAntContainer, {
             attributes: true,
             childList: true,
             characterData: true,
@@ -993,7 +1031,6 @@ function CheckPIorFreq() {
       azi: customAzimuth,
       ant: customAnt
     } = matchedEntry;
-
 	signalHold = (signalCalc >= SIGNAL_HOLD_THRESHOLD && cciValue <= CCI_HOLD_THRESHOLD) ? parseInt(signalHoldMax) : signalHold - 1; // Cooldown before hiding local station info
 	signalHold = (signalHold <= 0) ? 0 : signalHold;
 	signalDim = (signalCalc >= SIGNAL_DIM_THRESHOLD) ? signalDimMax : signalDim - 1; // Cooldown before dimming logo
@@ -1015,7 +1052,7 @@ function CheckPIorFreq() {
             if (logoRotate) {
                 img.classList.add('logoFull');
                 const elapsed = Date.now() - logoRotateStartTime;
-                if (elapsed >= LOGO_EFFECT_START_DELAY && elapsed < LOGO_EFFECT_START_DELAY + LOGO_EFFECT_DURATION && !isLogoTransitioning(img)) {
+                if (elapsed >= LOGO_EFFECT_START_DELAY && elapsed < LOGO_EFFECT_START_DELAY + LOGO_EFFECT_DURATION && !isLogoTransitioning(img) && !logoLookupsInFlight) {
                     img.classList.remove(...LOGO_EFFECT_OPTIONS.filter((opt) => opt !== currentLogoEffect));
                     img.classList.add(currentLogoEffect);
                 } else {
@@ -1097,6 +1134,8 @@ function updateStationLogo(piCode, psCode) {
         let found = false;
 
         // Fetch available logo list once
+        const lookupFreq = freqData;
+        logoLookupsInFlight++;
         fetch(`${apiPath}`, {
             method: 'GET',
             headers: {
@@ -1105,6 +1144,9 @@ function updateStationLogo(piCode, psCode) {
         })
         .then(response => response.json())
         .then(data => {
+            // Reply to a lookup made before tuning away or a PI change
+            if (freqData !== lookupFreq || window.piCode !== piCode) return;
+
             // Replace local station field if it exists with TX info field
             if (logoLocal) {
                 logoLocal = false;
@@ -1147,7 +1189,8 @@ function updateStationLogo(piCode, psCode) {
 
             checkNextPath(0); // Start checking paths
         })
-        .catch(err => console.error(`${pluginName}: Failed to fetch logo list`, err));
+        .catch(err => console.error(`${pluginName}: Failed to fetch logo list`, err))
+        .finally(() => { logoLookupsInFlight--; });
 
         // Rotating logo during PS loading
         if (!found && !logoRotate && !logoPIPSVisible) {
@@ -1228,6 +1271,9 @@ function updateLocalStationInfo() {
 
         let supportedExtensions = PRIORITISE_SVG_LOCAL ? ['svg', 'webp', 'png'] : ['webp', 'png', 'svg'];
         let foundLocal = false;
+        const lookupFreq = freqData;
+        // Replies after tuning away, an antenna switch or leaving local mode are dropped
+        const isStale = () => !logoLocal || freqData !== lookupFreq || getCurrentAntennaValue() !== currentAntenna;
 
         // Function to check each path for logo image
         function checkNextPath(index) {
@@ -1242,6 +1288,7 @@ function updateLocalStationInfo() {
 
             // Function to check each extension for logo image
             function checkNextExtension(extensionIndex) {
+                if (isStale()) return;
                 if (foundLocal || extensionIndex >= supportedExtensions.length) {
                     if (!foundLocal) {
                         checkNextPath(index + 1);
@@ -1253,6 +1300,7 @@ function updateLocalStationInfo() {
                     url: `${path}.${supportedExtensions[extensionIndex]}`,
                     method: 'HEAD',
                     success: function () {
+                        if (isStale()) return;
                         transitionLogoChange(logoImage, `${path}.${supportedExtensions[extensionIndex]}`, () => logoImage.attr('src', `${path}.${supportedExtensions[extensionIndex]}`).attr('alt', `Logo for ${freqData} FM`).css('display', 'block').css('image-rendering', 'auto').attr('class', ''));
                         foundLocal = true;
                         logoRotate = false;

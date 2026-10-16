@@ -25,6 +25,15 @@ This plugin displays station logos for stations with and without RDS data, targe
 
 * To change logo animation for tentatively loaded PS RDS, Open `pluginStationLogosOCE.js`, find and edit the line containing `const logoEffect`.
 
+v1.4.1
+------
+* No logo animation while a station logo loads during high latency
+* Logos now download before the transition starts during high latency
+* Fixed transitions briefly showing the previous logo during high latency
+* Fixed CCI updates with antenna switch disabled
+* Fixed logo flicker after leaving dynamic PS stations
+* Fixed stale local logos after tuning or antenna switch
+
 v1.4.0
 ------
 * Added CCI hold threshold option
