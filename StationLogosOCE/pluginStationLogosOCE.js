@@ -823,12 +823,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
                         if (IS_TEF_RADIO) cciValue = smoothInterpolation(cciValue);
                     } else {
-                        cciValue = 100;
+                        cciValue = 99;
                         if (!cciError) console.error(`[${pluginName}] CCI sigRaw data format invalid`);
                         cciError = true;
                     }
                 } else {
-                    cciValue = 100;
+                    cciValue = 99;
                 }
 
                 if (!previousAnt) previousAnt = ant;
