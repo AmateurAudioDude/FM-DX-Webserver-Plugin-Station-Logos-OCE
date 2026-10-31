@@ -313,6 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let originalDiv = document.querySelector('.panel-10');
     if (window.location.pathname !== '/setup') {
         originalDiv.style.width = '88px';
+        originalDiv.style.flexShrink = '0';
 
         // The button has no dedicated CSS of its own, it was always sized purely by
         // filling its wrapper, so narrowing the wrapper alone squishes it out of square.
