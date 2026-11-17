@@ -995,7 +995,7 @@ function CheckPIorFreq() {
 	}
 
 	const piCode = $('#data-pi').text().toUpperCase().trim();
-    const psCode = $('#data-ps').text().trim().replace(/^_+/, '').replace(/\s+/g, '_').replace(/_+$/, '');
+    const psCode = $('#data-ps').text().trim().replace(/[\s*?:"<>|\\/]+/g, '_').replace(/^_+|_+$/g, '');
 
     let signalCalc = -30;
     const isSignalDefined = typeof signalData !== 'undefined';
@@ -1187,6 +1187,10 @@ function updateStationLogo(piCode, psCode) {
                     checkNextPath(index + 1); // Continue checking next path
                 }
             }
+
+            const looseKey = name => name.toLowerCase().replace(/-/g, '_');
+            const looseMatch = psCode && data.availableLogos.find(file => looseKey(file.replace(/\.[^.]+$/, '')) === looseKey(`${piCode}_${psCode}`));
+            if (looseMatch) paths.push(`${localpath}${looseMatch.replace(/\.[^.]+$/, '')}`);
 
             checkNextPath(0); // Start checking paths
         })
