@@ -4,7 +4,7 @@ This plugin displays station logos for stations with and without RDS data, targe
 
 * [Download the latest zip file](https://github.com/AmateurAudioDude/FX-DX-Webserver-Station-Logos-OCE/archive/refs/heads/main.zip)
 * Transfer `StationLogosOCE` folder, and `StationLogosOCE.js` to FM-DX-Webserver `plugins` folder
-* Extract `logos` folder from file `logos.zip` and transfer to FM-DX-Webserver `web` folder
+* [Download](https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-Station-Logos-OCE/releases) and extract `logos` folder from file `logos.zip` and transfer to FM-DX-Webserver `web` folder
 * Restart FM-DX-Webserver if required
 * Login to Adminstrator Panel and enable plugin
 * Restart FM-DX-Webserver again if required
