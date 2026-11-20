@@ -22,6 +22,7 @@ const SIGNAL_HOLD_THRESHOLD = -101;             // Value in dBm - used by INCLUD
 const CCI_HOLD_THRESHOLD = 99;                  // Value in % - used by INCLUDE_LOCAL_STATION_INFO
 const IS_TEF_RADIO = false;                     // Enable if TEF radio firmware is used
 const HIDE_STEREO_ICON_MOBILE = false;          // Could be useful if a Mono/Stereo/MPX lock is needed otherwise unlikely required
+const COUNTRY_CODE = 'AUS';                     // Country code
 const DECEMBER_SANTA_HAT_LOGO = true;           // Santa hat as default logo during December
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1385,7 +1386,7 @@ function LocalStationInfoField() {
             <span id="data-station-name" style="font-size: 20px">${customStationName}</span>
         </h2>
         <h4 class="m-0">
-            <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>AUS</span>]</span>
+            <span style="font-size: 16px;">${customStationLoc || '&nbsp;'}</span> <span class="text-small">[<span>${COUNTRY_CODE}</span>]</span>
         </h4>
         <span class="text-small">
             <span>
